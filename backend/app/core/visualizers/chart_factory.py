@@ -32,11 +32,6 @@ class ChartType(str, Enum):
     TREEMAP = "treemap"
     DENSITY_HEATMAP = "density_heatmap"
     PARALLEL_COORDINATES = "parallel_coordinates"
-    CHOROPLETH = "choropleth"
-    SCATTER_MAP = "scatter_map"
-    DENSITY_MAP = "density_map"
-    CLUSTER = "cluster"
-    FORECAST = "forecast"
 
 
 class ChartFactory:
@@ -63,11 +58,6 @@ class ChartFactory:
             ChartType.TREEMAP: self.generator.generate_treemap,
             ChartType.DENSITY_HEATMAP: self.generator.generate_density_heatmap,
             ChartType.PARALLEL_COORDINATES: self.generator.generate_parallel_coordinates,
-            ChartType.CHOROPLETH: self.generator.generate_choropleth,
-            ChartType.SCATTER_MAP: self.generator.generate_scatter_map,
-            ChartType.DENSITY_MAP: self.generator.generate_density_map,
-            ChartType.CLUSTER: self.generator.generate_cluster_plot,
-            ChartType.FORECAST: self.generator.generate_forecast_plot,
         }
     
     def create(
@@ -186,10 +176,6 @@ class ChartFactory:
         categorical_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
         datetime_cols = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
         
-        # New: Geographic column detection
-        from .geo_utils import GeoUtils
-        geo_cols = GeoUtils.detect_geographic_columns(df)
-        
         # Default selections based on chart type
         if chart_type in ['histogram', 'box', 'violin']:
             # Single numeric column
@@ -230,26 +216,6 @@ class ChartFactory:
             else:
                 x = df.columns[0]
                 y = df.columns[1] if len(df.columns) > 1 else df.columns[0]
-        
-        elif chart_type == 'choropleth':
-            # Needs locations (country/state) + value
-            x = geo_cols.get('country') or geo_cols.get('state') or (categorical_cols[0] if categorical_cols else df.columns[0])
-            y = numeric_cols[0] if numeric_cols else (df.columns[1] if len(df.columns) > 1 else None)
-            
-        elif chart_type in ['scatter_map', 'density_map']:
-            # Needs lat/lon
-            x = geo_cols.get('latitude') or (numeric_cols[0] if len(numeric_cols) > 0 else None)
-            y = geo_cols.get('longitude') or (numeric_cols[1] if len(numeric_cols) > 1 else None)
-        
-        elif chart_type == 'cluster':
-            # Use all numeric cols
-            x = numeric_cols[0] if numeric_cols else df.columns[0]
-            y = numeric_cols[1] if len(numeric_cols) > 1 else None
-            
-        elif chart_type == 'forecast':
-            # Needs time + value
-            x = datetime_cols[0] if datetime_cols else df.columns[0]
-            y = numeric_cols[0] if numeric_cols else (df.columns[1] if len(df.columns) > 1 else None)
         
         else:
             # Default: first two columns
