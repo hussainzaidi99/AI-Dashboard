@@ -24,6 +24,30 @@ class FileStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
+class UserRole(str, Enum):
+    """User roles"""
+    ADMIN = "admin"
+    USER = "user"
+
+class User(Document):
+    """Model for users"""
+    user_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
+    email: Indexed(str, unique=True)
+    full_name: str
+    role: UserRole = UserRole.USER
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @before_event([Replace, SaveChanges, Insert])
+    def update_timestamp(self):
+        """Update updated_at timestamp on save"""
+        self.updated_at = datetime.utcnow()
+
+    class Settings:
+        name = "users"
+        indexes = ["email", "created_at"]
+
 class JobStatus(str, Enum):
     """Status for processing jobs"""
     PENDING = "pending"
@@ -34,6 +58,7 @@ class JobStatus(str, Enum):
 class FileUpload(Document):
     """Model for uploaded files"""
     file_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
+    user_id: Optional[Indexed(str)] = None
     filename: str
     original_filename: str
     file_size: int
@@ -51,6 +76,7 @@ class ProcessingJob(Document):
     """Model for file processing jobs"""
     job_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
     file_id: Indexed(str)
+    user_id: Optional[Indexed(str)] = None
     status: JobStatus = JobStatus.PENDING
     progress: int = 0  # 0-100
     dataframes_count: int = 0
@@ -71,6 +97,7 @@ class ChartData(Document):
     """Model for saved charts"""
     chart_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
     file_id: Indexed(str)
+    user_id: Optional[Indexed(str)] = None
     chart_type: str
     title: Optional[str] = None
     description: Optional[str] = None
@@ -91,6 +118,7 @@ class ChartData(Document):
 class Dashboard(Document):
     """Model for dashboards"""
     dashboard_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
+    user_id: Optional[Indexed(str)] = None
     title: str
     description: Optional[str] = None
     layout: Dict[str, Any] = Field(default_factory=dict)
@@ -111,6 +139,7 @@ class DataProfile(Document):
     """Model for saved data profiles"""
     profile_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
     file_id: Indexed(str)
+    user_id: Optional[Indexed(str)] = None
     profile_data: Dict[str, Any]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -122,6 +151,7 @@ class QualityReport(Document):
     """Model for saved quality reports"""
     report_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
     file_id: Indexed(str)
+    user_id: Optional[Indexed(str)] = None
     overall_score: float
     completeness_score: float
     consistency_score: float

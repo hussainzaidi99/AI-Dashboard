@@ -12,6 +12,7 @@ import sys
 
 from app.config import settings
 from app.models.mongodb_models import (
+    User,
     FileUpload,
     ProcessingJob,
     ChartData,
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # List of all Beanie models to initialize
 BEANIE_MODELS = [
+    User,
     FileUpload,
     ProcessingJob,
     ChartData,

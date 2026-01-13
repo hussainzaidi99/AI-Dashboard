@@ -10,6 +10,33 @@ from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 
 
+# ==================== User Schemas ====================
+
+class UserBase(BaseModel):
+    """Base user schema"""
+    email: str
+    full_name: str
+    role: str = "user"
+
+class UserCreate(UserBase):
+    """User creation schema"""
+    pass
+
+class UserResponse(UserBase):
+    """User response schema"""
+    user_id: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+class UserUpdate(BaseModel):
+    """User update schema"""
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 # ==================== File Upload Schemas ====================
 
 class FileUploadResponse(BaseModel):
