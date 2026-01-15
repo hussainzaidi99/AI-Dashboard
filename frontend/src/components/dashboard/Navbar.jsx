@@ -58,7 +58,7 @@ const Navbar = () => {
                 <div className="h-8 w-px bg-white/10" />
 
                 {/* Profile Section */}
-                <div className="relative">
+                <div className="relative z-50">
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className="flex items-center gap-3 p-1.5 pl-2 rounded-2xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/10"
@@ -77,14 +77,14 @@ const Navbar = () => {
                         {isProfileOpen && (
                             <>
                                 <div
-                                    className="fixed inset-0 z-40"
+                                    className="fixed inset-0 z-[60]"
                                     onClick={() => setIsProfileOpen(false)}
                                 />
                                 <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute right-0 mt-3 w-64 glass-card rounded-2xl border border-white/10 p-2 shadow-2xl z-50 overflow-hidden"
+                                    className="absolute right-0 mt-3 w-64 glass-card rounded-2xl border border-white/10 p-2 shadow-2xl z-[70] overflow-hidden"
                                 >
                                     <div className="p-4 border-b border-white/5 mb-2">
                                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Authenticated Account</p>

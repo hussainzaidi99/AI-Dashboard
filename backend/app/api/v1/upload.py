@@ -181,7 +181,7 @@ async def upload_multiple_files(
 @router.delete("/{file_id}")
 async def delete_file(file_id: str):
     """
-    Delete an uploaded file
+    Delete an uploaded file and clear all related cache
     """
     try:
         file_upload = await FileUpload.find_one(FileUpload.file_id == file_id)
@@ -192,18 +192,49 @@ async def delete_file(file_id: str):
         saved_filename = f"{file_id}.{file_upload.file_type}"
         file_path = get_upload_path(saved_filename)
         
-        # Delete file
+        # Delete physical file
         if os.path.exists(file_path):
             os.remove(file_path)
+            logger.info(f"Deleted physical file: {file_path}")
         
         # Delete from database
         await file_upload.delete()
+        logger.info(f"Deleted from MongoDB: {file_id}")
         
-        logger.info(f"File deleted: {file_id}")
+        # Clear all related cache entries
+        try:
+            # Clear processed data cache
+            processed_key = f"processed_result:{file_id}"
+            if cache_manager.get(processed_key):
+                cache_manager.delete(processed_key)
+                logger.info(f"Cleared cache: {processed_key}")
+            
+            # Clear insights cache for all possible sheet indices (0-10)
+            for sheet_idx in range(10):
+                insights_key = f"insights:{file_id}:{sheet_idx}"
+                if cache_manager.get(insights_key):
+                    cache_manager.delete(insights_key)
+                    logger.info(f"Cleared cache: {insights_key}")
+            
+            # Clear chatbot cache (pattern matching)
+            # Note: This clears all chatbot answers for this file
+            import redis
+            r = redis.Redis(host='localhost', port=6379, db=0)
+            chatbot_pattern = f"chatbot:{file_id}:*"
+            chatbot_keys = r.keys(chatbot_pattern)
+            if chatbot_keys:
+                for key in chatbot_keys:
+                    r.delete(key)
+                logger.info(f"Cleared {len(chatbot_keys)} chatbot cache entries")
+            
+            logger.info(f"✅ All cache cleared for file: {file_id}")
+            
+        except Exception as cache_error:
+            logger.warning(f"Error clearing cache (non-critical): {str(cache_error)}")
         
         return {
             "file_id": file_id,
-            "message": "File deleted successfully"
+            "message": "File and all related cache deleted successfully"
         }
     
     except HTTPException:

@@ -1,18 +1,23 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Database, Filter, ArrowRight } from 'lucide-react';
+import { Database, Filter, ArrowRight, FileText } from 'lucide-react';
 import { useDataset } from '../context/DatasetContext';
 import { dataApi } from '../api/data';
 import DataTable from '../components/shared/DataTable';
+import { useNavigate } from 'react-router-dom';
 
 const RawData = () => {
+    const navigate = useNavigate();
     const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly, textContent } = useDataset();
 
-    // Fetch Raw Data
-    const { data: rawData, isLoading } = useQuery({
+    // Fetch Raw Data with error handling
+    const { data: rawData, isLoading, isError } = useQuery({
         queryKey: ['raw-data', activeFileId, activeSheetIndex],
         queryFn: () => dataApi.getRows(activeFileId, activeSheetIndex, 50),
-        enabled: hasActiveDataset
+        enabled: hasActiveDataset && !isTextOnly,
+        retry: 1,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
     });
 
     const columns = rawData?.data?.[0] ? Object.keys(rawData.data[0]) : [];
@@ -74,7 +79,10 @@ const RawData = () => {
                             We cannot render the data grid without an active ingest stream. Please navigate to the Ingestion Zone.
                         </p>
                     </div>
-                    <button className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20">
+                    <button
+                        onClick={() => navigate('/upload')}
+                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20 hover:bg-primary/90"
+                    >
                         Go to Ingestion Zone
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>

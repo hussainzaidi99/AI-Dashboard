@@ -27,10 +27,10 @@ function App() {
 
   return (
     <Routes>
-      {/* Public Landing Page */}
+      {/* Public Landing Page - accessible to everyone */}
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />}
+        element={<Landing />}
       />
 
       {/* Public Auth Routes */}
