@@ -28,7 +28,7 @@ if sys.version_info >= (3, 12):
 
 from app.config import settings
 from app.core.mongodb_conns import init_mongodb, check_mongodb_connection
-from app.api.v1 import upload, processing, charts, data, ai, export
+from app.api.v1 import upload, processing, charts, data, ai, export, auth
 from app.utils.cache import cache_manager
 
 # Configure logging
@@ -85,6 +85,7 @@ app.include_router(charts.router, prefix=f"{settings.API_V1_PREFIX}/charts", tag
 app.include_router(data.router, prefix=f"{settings.API_V1_PREFIX}/data", tags=["Data"])
 app.include_router(ai.router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI"])
 app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tags=["Export"])
+app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Auth"])
 
 
 @app.get("/")

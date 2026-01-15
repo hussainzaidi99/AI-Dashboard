@@ -34,6 +34,7 @@ class User(Document):
     user_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
     email: Indexed(str, unique=True)
     full_name: str
+    hashed_password: str
     role: UserRole = UserRole.USER
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)

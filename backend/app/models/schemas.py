@@ -20,7 +20,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """User creation schema"""
-    pass
+    password: str
 
 class UserResponse(UserBase):
     """User response schema"""
@@ -33,8 +33,23 @@ class UserUpdate(BaseModel):
     """User update schema"""
     email: Optional[str] = None
     full_name: Optional[str] = None
+    password: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+
+class Token(BaseModel):
+    """Token schema"""
+    access_token: str
+    token_type: str = "bearer"
+    user: Optional[Dict[str, Any]] = None
+
+class TokenPayload(BaseModel):
+    """Token payload schema"""
+    sub: Optional[str] = None
+
+class GoogleLoginRequest(BaseModel):
+    """Request model for Google login"""
+    token: str
 
 
 # ==================== File Upload Schemas ====================
