@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         formData.append('password', password);
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/auth/login`, formData);
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, formData);
             const newToken = response.data.access_token;
             setToken(newToken);
             sessionStorage.setItem('token', newToken);
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
     const googleLogin = async (googleToken) => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/auth/google`, {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/google`, {
                 token: googleToken
             });
             const newToken = response.data.access_token;
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (email, password, fullName) => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/auth/register`, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
                 email,
                 password,
                 full_name: fullName,

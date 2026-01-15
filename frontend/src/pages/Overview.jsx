@@ -64,9 +64,12 @@ const Overview = () => {
     const { data: dashboard, isLoading: dashboardLoading } = useQuery({
         queryKey: ['dashboard', activeFileId, activeSheetIndex],
         queryFn: async () => {
-            const response = await fetch(`http://localhost:8000/api/v1/charts/dashboard`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/charts/dashboard`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                },
                 body: JSON.stringify({ file_id: activeFileId, sheet_index: activeSheetIndex })
             });
             return response.json();

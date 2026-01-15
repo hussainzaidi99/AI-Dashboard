@@ -25,9 +25,12 @@ const VisualAnalysis = () => {
 
         setQueryLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/ai/query`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/query`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                },
                 body: JSON.stringify({ file_id: activeFileId, query: query, sheet_index: activeSheetIndex })
             });
             const data = await response.json();
@@ -45,8 +48,11 @@ const VisualAnalysis = () => {
     const { data: recommendations, isLoading: recsLoading } = useQuery({
         queryKey: ['recommendations', activeFileId, activeSheetIndex],
         queryFn: async () => {
-            const response = await fetch(`http://localhost:8000/api/v1/charts/recommend?file_id=${activeFileId}&sheet_index=${activeSheetIndex}`, {
-                method: 'POST'
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/charts/recommend?file_id=${activeFileId}&sheet_index=${activeSheetIndex}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                }
             });
             return response.json();
         },
