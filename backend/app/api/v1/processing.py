@@ -34,7 +34,7 @@ class ProcessRequest(BaseModel):
     options: Optional[Dict[str, Any]] = {}
 
 
-@router.post("/process")
+@router.post("")
 async def process_file(request: ProcessRequest, background_tasks: BackgroundTasks):
     """
     Process an uploaded file and extract data
@@ -154,7 +154,7 @@ async def process_file(request: ProcessRequest, background_tasks: BackgroundTask
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/process/status/{file_id}")
+@router.get("/status/{file_id}")
 async def get_processing_status(file_id: str):
     """
     Get processing status for a file
@@ -170,7 +170,7 @@ async def get_processing_status(file_id: str):
     return job
 
 
-@router.get("/process/result/{file_id}")
+@router.get("/result/{file_id}")
 async def get_processing_result(file_id: str):
     """
     Get full processing result
@@ -182,7 +182,7 @@ async def get_processing_result(file_id: str):
     return cached_result
 
 
-@router.delete("/process/result/{file_id}")
+@router.delete("/result/{file_id}")
 async def delete_processing_result(file_id: str):
     """
     Delete processing result from memory

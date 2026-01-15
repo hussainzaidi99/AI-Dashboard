@@ -1,13 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const FileUploader = ({ onUploadSuccess }) => {
+    const navigate = useNavigate();
     const [isDragging, setIsDragging] = useState(false);
     const [uploadState, setUploadState] = useState('idle'); // idle, uploading, processing, success, error
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState(null);
     const [fileInfo, setFileInfo] = useState(null);
+    const [isTextOnly, setIsTextOnly] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleDragOver = (e) => {
@@ -43,6 +46,7 @@ const FileUploader = ({ onUploadSuccess }) => {
         }
 
         setFileInfo({ name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' MB' });
+        setIsTextOnly(false);
         setUploadState('uploading');
         setError(null);
         setProgress(0);
@@ -57,9 +61,14 @@ const FileUploader = ({ onUploadSuccess }) => {
 
             // 2. Start Processing
             setUploadState('processing');
-            await processingApi.start(uploadResult.file_id);
+            const processResult = await processingApi.start(uploadResult.file_id);
 
-            // 3. Notify Success
+            // 3. Detect if text-only
+            if (processResult.dataframes_count === 0) {
+                setIsTextOnly(true);
+            }
+
+            // 4. Notify Success
             setUploadState('success');
             if (onUploadSuccess) onUploadSuccess(uploadResult.file_id);
 
@@ -195,16 +204,24 @@ const FileUploader = ({ onUploadSuccess }) => {
                         <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
                             <CheckCircle2 className="text-emerald-500" size={40} />
                         </div>
-                        <h3 className="text-2xl font-bold mb-2 text-emerald-400">Analysis Complete!</h3>
+                        <h3 className="text-2xl font-bold mb-2 text-emerald-400">
+                            {isTextOnly ? 'Document Processed!' : 'Analysis Complete!'}
+                        </h3>
                         <p className="text-muted-foreground mb-8">
-                            Your data has been processed and is ready for discovery.
+                            {isTextOnly
+                                ? "We've extracted the text content. Head to the Intelligence Hub to ask questions about this document."
+                                : "Your tabular data has been processed and is ready for discovery."
+                            }
                         </p>
                         <div className="flex gap-4 justify-center">
                             <button onClick={reset} className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all font-medium">
                                 Upload Another
                             </button>
-                            <button className="px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all">
-                                View Insights
+                            <button
+                                onClick={() => navigate(isTextOnly ? '/intelligence' : '/dashboard')}
+                                className="px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all"
+                            >
+                                {isTextOnly ? 'Ask AI' : 'View Insights'}
                             </button>
                         </div>
                     </motion.div>

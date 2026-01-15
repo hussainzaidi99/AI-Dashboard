@@ -18,10 +18,11 @@ export const aiApi = {
         return response.data;
     },
 
-    parseQuery: async (fileId, query) => {
+    parseQuery: async (fileId, query, sheetIndex = 0) => {
         const response = await apiClient.post('/ai/query', {
             file_id: fileId,
-            query: query
+            query: query,
+            sheet_index: sheetIndex
         });
         return response.data;
     }

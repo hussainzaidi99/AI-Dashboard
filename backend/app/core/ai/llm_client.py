@@ -11,6 +11,7 @@ from langchain_core.messages import BaseMessage
 from typing import Optional, Dict, Any, List
 from functools import lru_cache
 import logging
+import httpx
 
 from app.config import settings
 
@@ -33,12 +34,13 @@ class LLMClient:
         self.temperature = temperature or settings.LLM_TEMPERATURE
         self.max_tokens = max_tokens or settings.LLM_MAX_TOKENS
         
-        # Initialize ChatGroq
+        # Initialize ChatGroq with a clean http_client to avoid proxy issues
         self.llm = ChatGroq(
             groq_api_key=self.api_key,
             model_name=self.model,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
+            http_client=httpx.Client()
         )
         
         logger.info(f"LLM Client initialized with model: {self.model}")
@@ -67,7 +69,7 @@ class LLMClient:
         system_message: Optional[str] = None,
         **kwargs
     ) -> str:
-        """Generate response from LLM"""
+        """Generate response from LLM with rate limit handling"""
         try:
             messages = []
             
@@ -80,8 +82,28 @@ class LLMClient:
             return response.content
         
         except Exception as e:
+            error_msg = str(e).lower()
+            
+            # Check for rate limiting errors
+            if "rate" in error_msg or "limit" in error_msg or "429" in error_msg:
+                logger.error(f"Groq API rate limit exceeded: {str(e)}")
+                raise ValueError(
+                    "AI service is temporarily unavailable due to rate limits. "
+                    "Please try again in a few moments. "
+                    "Tip: Reduce the frequency of AI requests or upgrade to a paid Groq plan."
+                )
+            
+            # Check for connection errors (often rate limiting in disguise)
+            elif "connection" in error_msg:
+                logger.error(f"Groq API connection error (likely rate limiting): {str(e)}")
+                raise ValueError(
+                    "AI service is experiencing connectivity issues. "
+                    "This is often caused by rate limiting. Please wait 30-60 seconds and try again."
+                )
+            
+            # Generic error
             logger.error(f"LLM generation error: {str(e)}")
-            raise
+            raise ValueError(f"AI service error: {str(e)}")
     
     def generate_sync(
         self,

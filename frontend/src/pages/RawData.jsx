@@ -6,7 +6,7 @@ import { dataApi } from '../api/data';
 import DataTable from '../components/shared/DataTable';
 
 const RawData = () => {
-    const { activeFileId, activeSheetIndex, hasActiveDataset } = useDataset();
+    const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly, textContent } = useDataset();
 
     // Fetch Raw Data
     const { data: rawData, isLoading } = useQuery({
@@ -41,11 +41,27 @@ const RawData = () => {
 
             {hasActiveDataset ? (
                 <div className="glass-card rounded-[2.5rem] p-10 min-h-[600px]">
-                    <DataTable
-                        data={rawData?.data || []}
-                        columns={columns}
-                        loading={isLoading}
-                    />
+                    {isTextOnly ? (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-6 border-b border-white/5">
+                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                    <FileText size={20} />
+                                </div>
+                                <h3 className="text-xl font-bold">Extracted Text Content</h3>
+                            </div>
+                            <div className="prose prose-invert max-w-none">
+                                <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed font-medium">
+                                    {textContent || "No text content available."}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <DataTable
+                            data={rawData?.data || []}
+                            columns={columns}
+                            loading={isLoading}
+                        />
+                    )}
                 </div>
             ) : (
                 <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6">

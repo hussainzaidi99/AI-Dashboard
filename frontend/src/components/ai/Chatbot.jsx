@@ -2,16 +2,42 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, X, RotateCcw, ChevronDown, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDataset } from '../../context/DatasetContext';
+import { useLocation } from 'react-router-dom';
 import { aiApi } from '../../api/ai';
 
 const Chatbot = () => {
-    const { activeFileId, activeSheetIndex, hasActiveDataset } = useDataset();
+    const { activeFileId, activeFileName, activeSheetIndex, hasActiveDataset } = useDataset();
+    const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState([
-        { id: 1, type: 'bot', text: 'Hello! I am AI Assistant from AI Analytics. How can I help you today?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    ]);
+    const [messages, setMessages] = useState([]);
+
+    // Initialize greeting based on context
+    useEffect(() => {
+        if (messages.length === 0) {
+            let greeting = "Hello! I am your AI Intelligence Assistant. How can I help you navigate your data today?";
+
+            if (!hasActiveDataset) {
+                greeting = "Welcome! I'm ready to analyze your data. Please head over to the 'Data Ingestion' zone to upload a CSV, Excel, or Word document to get started.";
+            } else if (location.pathname.includes('upload')) {
+                greeting = `I see you're in the ingestion zone. We're currently following "${activeFileName}". Would you like to upload another, or should we head to Visual Analysis?`;
+            } else if (location.pathname.includes('analysis')) {
+                greeting = `Ready for deep dive! We have "${activeFileName}" loaded. Try asking me something like 'Show me trends' or 'What are the key correlations?'`;
+            } else if (activeFileName) {
+                greeting = `Hi! I'm ready to assist with "${activeFileName}". We've extracted several entities already—what's on your mind?`;
+            }
+
+            setMessages([
+                {
+                    id: 1,
+                    type: 'bot',
+                    text: greeting,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+            ]);
+        }
+    }, [hasActiveDataset, activeFileName, location.pathname, messages.length]);
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
@@ -45,7 +71,7 @@ const Chatbot = () => {
                 const response = await aiApi.askQuestion(activeFileId, userText, activeSheetIndex);
                 responseText = response.answer;
             } else {
-                responseText = "I'm ready to analyze your data, but you haven't uploaded a file yet! Go to 'Data Upload' and I'll help you break it down.";
+                responseText = "I'm ready to analyze your data, but you haven't uploaded a file yet! Please visit the Ingestion Zone and I'll walk you through the process.";
             }
 
             const botMsg = {

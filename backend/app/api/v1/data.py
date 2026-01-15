@@ -23,7 +23,7 @@ class DataRequest(BaseModel):
     sheet_index: Optional[int] = 0
 
 
-@router.get("/data/{file_id}")
+@router.get("/{file_id}")
 async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 100):
     """
     Get data from a processed file
@@ -59,21 +59,21 @@ async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 10
     }
 
 
-@router.post("/data/profile")
-async def profile_data(request: DataRequest):
+@router.get("/profile")
+async def profile_data(file_id: str, sheet_index: int = 0):
     """
     Generate data profile for a dataset
     """
     try:
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = cache_manager.get(f"processed_result:{file_id}")
         if not data:
             raise HTTPException(status_code=404, detail="Data not found in cache")
         
-        if request.sheet_index >= len(data['dataframes']):
+        if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
         
         # Get DataFrame
-        sheet_data = data['dataframes'][request.sheet_index]
+        sheet_data = data['dataframes'][sheet_index]
         df = pd.DataFrame(sheet_data['data'])
         
         # Profile data
@@ -112,7 +112,7 @@ async def profile_data(request: DataRequest):
         
         # Save to MongoDB
         data_profile = DataProfile(
-            file_id=request.file_id,
+            file_id=file_id,
             profile_data=profile_result
         )
         await data_profile.insert()
@@ -124,21 +124,32 @@ async def profile_data(request: DataRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/data/statistics")
-async def analyze_statistics(request: DataRequest):
+@router.get("/statistics")
+async def analyze_statistics(file_id: str, sheet_index: int = 0):
     """
     Perform statistical analysis on dataset
     """
     try:
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = cache_manager.get(f"processed_result:{file_id}")
         if not data:
             raise HTTPException(status_code=404, detail="Data not found in cache")
         
-        if request.sheet_index >= len(data['dataframes']):
+        has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+        
+        if not has_dataframes:
+            return {
+                "file_id": file_id,
+                "sheet_index": sheet_index,
+                "statistics": {},
+                "message": "This is a text-based document. High-level statistical aggregates are not applicable.",
+                "is_text_only": True
+            }
+
+        if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
         
         # Get DataFrame
-        sheet_data = data['dataframes'][request.sheet_index]
+        sheet_data = data['dataframes'][sheet_index]
         df = pd.DataFrame(sheet_data['data'])
         
         # Analyze
@@ -173,14 +184,15 @@ async def analyze_statistics(request: DataRequest):
             }
         
         return {
-            "file_id": request.file_id,
-            "sheet_index": request.sheet_index,
+            "file_id": file_id,
+            "sheet_index": sheet_index,
             "distribution_tests": distribution_tests,
             "correlation_analysis": correlation,
             "outlier_analysis": outliers,
             "variance_tests": result.variance_tests,
             "summary_stats": result.summary_stats.to_dict(),
-            "warnings": result.warnings
+            "warnings": result.warnings,
+            "is_text_only": False
         }
     
     except Exception as e:
@@ -188,21 +200,33 @@ async def analyze_statistics(request: DataRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/data/quality")
-async def check_quality(request: DataRequest):
+@router.get("/quality")
+async def check_quality(file_id: str, sheet_index: int = 0):
     """
     Check data quality
     """
     try:
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = cache_manager.get(f"processed_result:{file_id}")
         if not data:
             raise HTTPException(status_code=404, detail="Data not found in cache")
         
-        if request.sheet_index >= len(data['dataframes']):
+        has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+        
+        if not has_dataframes:
+            return {
+                "file_id": file_id,
+                "sheet_index": sheet_index,
+                "overall_score": 100.0,
+                "is_text_only": True,
+                "message": "Text document integrity is verified.",
+                "issues": []
+            }
+
+        if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
         
         # Get DataFrame
-        sheet_data = data['dataframes'][request.sheet_index]
+        sheet_data = data['dataframes'][sheet_index]
         df = pd.DataFrame(sheet_data['data'])
         
         # Check quality
@@ -223,8 +247,8 @@ async def check_quality(request: DataRequest):
             })
         
         report_result = {
-            "file_id": request.file_id,
-            "sheet_index": request.sheet_index,
+            "file_id": file_id,
+            "sheet_index": sheet_index,
             "overall_score": report.overall_score,
             "scores": {
                 "completeness": report.completeness_score,
@@ -237,12 +261,13 @@ async def check_quality(request: DataRequest):
             "missing_data": report.missing_data,
             "duplicate_rows": report.duplicate_rows,
             "duplicate_percentage": report.duplicate_percentage,
-            "checked_at": report.checked_at.isoformat() if hasattr(report.checked_at, 'isoformat') else str(report.checked_at)
+            "checked_at": report.checked_at.isoformat() if hasattr(report.checked_at, 'isoformat') else str(report.checked_at),
+            "is_text_only": False
         }
         
         # Save to MongoDB
         quality_report = QualityReport(
-            file_id=request.file_id,
+            file_id=file_id,
             overall_score=report.overall_score,
             completeness_score=report.completeness_score,
             consistency_score=report.consistency_score,
@@ -259,7 +284,7 @@ async def check_quality(request: DataRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/data/columns/{file_id}")
+@router.get("/columns/{file_id}")
 async def get_columns(file_id: str, sheet_index: int = 0):
     """
     Get column information for a dataset

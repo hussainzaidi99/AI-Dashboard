@@ -21,6 +21,7 @@ class CacheManager:
     def __init__(self):
         self.enabled = settings.ENABLE_CACHING
         self.redis_client = None
+        self.memory_fallback = {}
         
         if self.enabled:
             try:
@@ -33,8 +34,7 @@ class CacheManager:
                 self.redis_client.ping()
                 logger.info("Cache enabled: Connected to Redis")
             except Exception as e:
-                logger.warning(f"Cache disabled: Could not connect to Redis: {str(e)}")
-                self.enabled = False
+                logger.warning(f"Redis connection failed, but caching remains enabled via memory fallback: {str(e)}")
     
     def get(self, key: str) -> Optional[Any]:
         """
@@ -46,8 +46,12 @@ class CacheManager:
         Returns:
             Cached value or None
         """
-        if not self.enabled or not self.redis_client:
+        if not self.enabled:
             return None
+        
+        if not self.redis_client:
+            # Use memory fallback
+            return self.memory_fallback.get(key)
         
         try:
             value = self.redis_client.get(key)
@@ -56,7 +60,8 @@ class CacheManager:
             return None
         except Exception as e:
             logger.error(f"Cache get error: {str(e)}")
-            return None
+            # Fallback to memory
+            return self.memory_fallback.get(key)
     
     def set(
         self,
@@ -75,8 +80,13 @@ class CacheManager:
         Returns:
             True if successful
         """
-        if not self.enabled or not self.redis_client:
+        if not self.enabled:
             return False
+            
+        if not self.redis_client:
+            # Use memory fallback
+            self.memory_fallback[key] = value
+            return True
         
         try:
             serialized = json.dumps(value)
@@ -84,10 +94,14 @@ class CacheManager:
                 self.redis_client.setex(key, expire, serialized)
             else:
                 self.redis_client.set(key, serialized)
+            
+            # Also update memory fallback for extra reliability
+            self.memory_fallback[key] = value
             return True
         except Exception as e:
             logger.error(f"Cache set error: {str(e)}")
-            return False
+            self.memory_fallback[key] = value
+            return True
     
     def delete(self, key: str) -> bool:
         """

@@ -5,7 +5,7 @@ export const fileApi = {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await apiClient.post('/upload/upload', formData, {
+        const response = await apiClient.post('/upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -28,7 +28,7 @@ export const fileApi = {
     },
 
     delete: async (fileId) => {
-        const response = await apiClient.delete(`/upload/delete/${fileId}`);
+        const response = await apiClient.delete(`/upload/${fileId}`);
         return response.data;
     }
 };

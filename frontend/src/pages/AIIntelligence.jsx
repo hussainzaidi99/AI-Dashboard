@@ -51,13 +51,16 @@ const SkeletonCard = () => (
 );
 
 const AIIntelligence = () => {
-    const { activeFileId, activeSheetIndex, hasActiveDataset } = useDataset();
+    const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly } = useDataset();
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['ai-insights', activeFileId, activeSheetIndex],
         queryFn: () => aiApi.getInsights(activeFileId, activeSheetIndex),
         enabled: hasActiveDataset,
-        placeholderData: (prev) => prev
+        placeholderData: (prev) => prev,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+        retry: 1, // Only retry once on failure
     });
 
     const mapSeverityToType = (severity) => {
@@ -144,7 +147,9 @@ const AIIntelligence = () => {
                                 <div className="p-3.5 rounded-2xl bg-white/5 text-white shadow-xl shadow-black/20">
                                     <FileText size={28} />
                                 </div>
-                                <h2 className="text-3xl font-black text-foreground tracking-tight">Executive Summary</h2>
+                                <h2 className="text-3xl font-black text-foreground tracking-tight">
+                                    {isTextOnly ? 'Document Synthesis' : 'Executive Summary'}
+                                </h2>
                             </div>
 
                             {isLoading ? (
@@ -157,7 +162,10 @@ const AIIntelligence = () => {
                                 <div className="space-y-6 flex-1">
                                     <div className="prose prose-invert max-w-none">
                                         <p className="text-lg text-zinc-300 leading-relaxed font-medium">
-                                            {data?.summary || "Global analysis complete. Our neural engines have parsed the dataset to identify core structural patterns and optimization opportunities."}
+                                            {data?.summary || (isTextOnly
+                                                ? "Document synthesis complete. Our AI has parsed the text content to identify core themes, key entities, and significant insights."
+                                                : "Global analysis complete. Our neural engines have parsed the dataset to identify core structural patterns and optimization opportunities.")
+                                            }
                                         </p>
                                     </div>
 
@@ -237,10 +245,26 @@ const AIIntelligence = () => {
                                 <div className="p-6 rounded-2xl bg-zinc-500/5 border border-zinc-500/10 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Global Discovery Engine Active</span>
+                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                                            {isTextOnly ? 'Semantic Discovery Engine Active' : 'Global Discovery Engine Active'}
+                                        </span>
                                     </div>
                                     <Zap size={16} className="text-emerald-500" />
                                 </div>
+
+                                {isTextOnly && (
+                                    <div className="p-6 rounded-[2rem] bg-primary/10 border border-primary/20 flex flex-col items-center text-center space-y-4">
+                                        <Brain size={32} className="text-primary" />
+                                        <p className="text-sm font-bold text-white">Need deeper analysis?</p>
+                                        <p className="text-xs text-zinc-400">Ask the Intelligence Assistant specific questions about the document content.</p>
+                                        <button
+                                            onClick={() => document.getElementById('chatbot-toggle')?.click()}
+                                            className="px-6 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/80 transition-all"
+                                        >
+                                            Start Q&A
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

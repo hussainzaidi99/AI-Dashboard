@@ -19,7 +19,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/upload")
+@router.post("")
 async def upload_file(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None
@@ -90,7 +90,7 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/upload/multiple")
+@router.post("/multiple")
 async def upload_multiple_files(
     files: List[UploadFile] = File(...)
 ):
@@ -178,7 +178,7 @@ async def upload_multiple_files(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/upload/{file_id}")
+@router.delete("/{file_id}")
 async def delete_file(file_id: str):
     """
     Delete an uploaded file
@@ -213,7 +213,7 @@ async def delete_file(file_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/upload/status/{file_id}")
+@router.get("/status/{file_id}")
 async def get_upload_status(file_id: str):
     """
     Get upload and processing status for a file
@@ -225,7 +225,7 @@ async def get_upload_status(file_id: str):
     return file_upload
 
 
-@router.get("/upload/list")
+@router.get("/list")
 async def list_uploaded_files():
     """
     List all uploaded files

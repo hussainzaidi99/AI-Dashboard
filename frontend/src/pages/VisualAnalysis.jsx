@@ -1,204 +1,212 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     BarChart3,
-    Settings2,
-    Download,
-    Share2,
-    Layout,
-    Move,
-    Plus
+    LineChart,
+    PieChart,
+    Search,
+    Brain,
+    Zap,
+    Sparkles,
+    FileCode,
+    Plus,
+    Layers,
+    ArrowRight,
+    TrendingUp
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useDataset } from '../context/DatasetContext';
-import { dataApi } from '../api/data';
+import { chartsApi } from '../api/charts';
+import { aiApi } from '../api/ai';
 import VizWidget from '../components/visualizations/VizWidget';
 
 const VisualAnalysis = () => {
-    const { activeFileId, activeSheetIndex, hasActiveDataset } = useDataset();
+    const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly } = useDataset();
+    const navigate = useNavigate();
     const [selectedChartType, setSelectedChartType] = useState('bar');
     const [query, setQuery] = useState('');
     const [queryLoading, setQueryLoading] = useState(false);
     const [draftWidget, setDraftWidget] = useState(null);
 
-    const handleInquiry = async (e) => {
+    // Fetch Recommendations with caching
+    const { data: recommendations, isLoading: recsLoading } = useQuery({
+        queryKey: ['chart-recommendations', activeFileId, activeSheetIndex],
+        queryFn: () => chartsApi.recommend(activeFileId, activeSheetIndex),
+        enabled: hasActiveDataset && !isTextOnly,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    });
+
+    const handleQuerySubmit = async (e) => {
         e.preventDefault();
         if (!query.trim()) return;
 
         setQueryLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/query`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ file_id: activeFileId, query: query, sheet_index: activeSheetIndex })
+            const result = await aiApi.parseQuery({
+                file_id: activeFileId,
+                sheet_index: activeSheetIndex,
+                query: query,
+                use_ai: true
             });
-            const data = await response.json();
-            if (data.parsed) {
+
+            if (result.chart_config) {
                 setDraftWidget({
                     title: `AI Result: ${query}`,
-                    description: `Generated based on your inquiry: "${query}". Confidence: ${Math.round(data.parsed.confidence * 100)}%`,
-                    chart: {
-                        type: data.parsed.chart_type,
-                        labels: [], // Backend would ideally provide data here or we fetch it
-                        datasets: []
-                    }
+                    description: "Generated via Natural Language Processing",
+                    chart: result.chart_config
                 });
             }
         } catch (err) {
-            console.error('Inquiry error:', err);
+            console.error("Query failed:", err);
         } finally {
             setQueryLoading(false);
         }
     };
 
-    // Fetch Recommended Charts
-    const { data: recommendations, isLoading: recsLoading } = useQuery({
-        queryKey: ['recommendations', activeFileId, activeSheetIndex],
-        queryFn: async () => {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/charts/recommend?file_id=${activeFileId}&sheet_index=${activeSheetIndex}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                }
-            });
-            return response.json();
-        },
-        enabled: hasActiveDataset
-    });
-
     return (
-        <div className="space-y-8 pb-20">
-            {/* Page Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Visual Analysis</h2>
-                    <p className="text-muted-foreground mt-1">Deep dive into your dataset with AI-powered visualization tools.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 transition-all text-sm font-medium flex items-center gap-2">
-                        <Settings2 size={16} />
-                        Configure View
-                    </button>
-                    <button className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all flex items-center gap-2">
-                        <Plus size={16} />
-                        Add Custom Widget
-                    </button>
+        <div className="space-y-10 pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="max-w-3xl">
+                    <h1 className="text-4xl font-black tracking-tight mb-3">Discovery Canvas</h1>
+                    <p className="text-muted-foreground text-lg font-medium">
+                        Transform raw data into strategic insights using our neural visualization engine.
+                    </p>
                 </div>
             </div>
 
-            {!hasActiveDataset ? (
-                <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6">
-                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground/30">
-                        <BarChart3 size={48} />
+            {hasActiveDataset ? (
+                isTextOnly ? (
+                    <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6">
+                        <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-primary/40">
+                            <Sparkles size={48} />
+                        </div>
+                        <div className="max-w-md space-y-2">
+                            <h3 className="text-2xl font-bold">Chart Engine Not Applicable</h3>
+                            <p className="text-muted-foreground font-medium">
+                                This document consists primarily of text content. While we can't generate traditional charts, our AI can provide deep insights and answer your questions in the Intelligence Hub.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => navigate('/intelligence')}
+                            className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20"
+                        >
+                            <Brain size={18} />
+                            Go to Intelligence Hub
+                        </button>
                     </div>
-                    <div className="max-w-md space-y-2">
-                        <h3 className="text-2xl font-bold">Analysis Engine Offline</h3>
-                        <p className="text-muted-foreground">
-                            Please ingest a dataset first to activate the multi-dimensional visual analysis engine.
-                        </p>
-                    </div>
-                    <button className="px-8 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 font-bold transition-all">
-                        Go to Ingestion Zone
-                    </button>
-                </div>
-            ) : (
-                <div className="space-y-8">
-                    {/* Intelligence Inquiry Bar */}
-                    <form onSubmit={handleInquiry} className="glass-card p-6 rounded-[2rem] border-primary/20 shadow-[0_0_40px_rgba(59,130,246,0.1)]">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                                {queryLoading ? <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <BarChart3 size={24} />}
-                            </div>
-                            <div className="flex-1 relative group">
+                ) : (
+                    <div className="space-y-8">
+                        {/* Search / NLP Input */}
+                        <form onSubmit={handleQuerySubmit} className="relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000"></div>
+                            <div className="relative">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                    <Brain size={24} className="animate-pulse" />
+                                </div>
                                 <input
                                     type="text"
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Ask the Intelligence Engine... e.g., 'Show me revenue trends by region as a bar chart'"
-                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-4 pr-32 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                    className="w-full h-16 bg-black/40 border border-white/10 rounded-[2rem] pl-16 pr-32 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all backdrop-blur-xl"
                                     disabled={queryLoading}
                                 />
                                 <button
                                     type="submit"
                                     disabled={queryLoading || !query.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50"
                                 >
-                                    {queryLoading ? 'Processing...' : 'Ask AI'}
+                                    {queryLoading ? 'Thinking...' : 'Analyze'}
                                 </button>
                             </div>
-                        </div>
-                    </form>
+                        </form>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-                        {/* Controls / Recommendations Sidebar */}
-                        <div className="xl:col-span-1 space-y-6">
-                            <div className="glass-card rounded-[2rem] p-6 space-y-6">
-                                <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">AI Intelligence</h3>
+                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                            {/* Recommendations Sidebar */}
+                            <div className="xl:col-span-1 space-y-6">
+                                <div className="glass-card rounded-[2.5rem] p-8 space-y-6 border border-white/5">
+                                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                                        <Zap size={14} />
+                                        <span>AI Suggestions</span>
+                                    </div>
 
-                                <div className="space-y-3">
-                                    <p className="text-xs font-medium text-white/50">Suggested Visualizations</p>
-                                    {recsLoading ? (
-                                        [1, 2, 3].map(i => <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />)
-                                    ) : recommendations?.recommendations?.map((rec, idx) => (
-                                        <button
+                                    <div className="space-y-4">
+                                        {recsLoading ? (
+                                            [1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />)
+                                        ) : recommendations?.recommendations?.map((rec, idx) => (
+                                            <button
+                                                key={idx}
+                                                className="w-full p-5 rounded-[2rem] bg-white/5 border border-white/10 hover:border-primary/50 text-left transition-all group"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[10px] font-black uppercase text-primary">{rec.chart_type}</span>
+                                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">
+                                                        {Math.round(rec.confidence * 100)}%
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-bold text-white/80 group-hover:text-white leading-relaxed">
+                                                    {rec.reasoning.split('.')[0]}.
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Main Canvas */}
+                            <div className="xl:col-span-3 space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {draftWidget && (
+                                        <VizWidget
+                                            title={draftWidget.title}
+                                            description={draftWidget.description}
+                                            config={draftWidget.chart}
+                                            isAIResult
+                                        />
+                                    )}
+                                    {recommendations?.recommendations?.slice(0, 4).map((rec, idx) => (
+                                        <VizWidget
                                             key={idx}
-                                            className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 text-left transition-all group"
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-tighter text-primary">{rec.chart_type}</span>
-                                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                                                    {Math.round(rec.confidence * 100)}% Match
-                                                </span>
-                                            </div>
-                                            <p className="text-xs font-semibold text-white/80 group-hover:text-white transition-colors">
-                                                {rec.reasoning.split('.')[0]}.
-                                            </p>
-                                        </button>
+                                            title={`${rec.chart_type.toUpperCase()} Analysis`}
+                                            description={rec.reasoning}
+                                            config={rec.config}
+                                        />
                                     ))}
                                 </div>
 
-                                <div className="pt-6 border-t border-white/5">
-                                    <button className="w-full p-4 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all flex items-center justify-center gap-2">
-                                        <Layout size={16} />
-                                        Auto-Layout Dashboard
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Visualization Canvas */}
-                        <div className="xl:col-span-3 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {draftWidget && (
-                                    <VizWidget
-                                        title={draftWidget.title}
-                                        description={draftWidget.description}
-                                        config={draftWidget.chart}
-                                        isAIResult
-                                    />
-                                )}
-                                {recommendations?.recommendations?.slice(0, 4).map((rec, idx) => (
-                                    <VizWidget
-                                        key={idx}
-                                        title={`${rec.chart_type.toUpperCase()} Analysis`}
-                                        description={rec.reasoning}
-                                        config={rec.config}
-                                    />
-                                ))}
-                            </div>
-
-                            <div className="h-[200px] border-2 border-dashed border-white/5 rounded-[2.5rem] flex items-center justify-center group cursor-pointer hover:border-white/10 transition-colors">
-                                <div className="text-center group-hover:scale-105 transition-transform duration-500">
-                                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3 text-muted-foreground/50">
-                                        <Plus size={24} />
+                                <div className="h-[200px] border-2 border-dashed border-white/5 rounded-[3rem] flex items-center justify-center group cursor-pointer hover:border-white/10 transition-colors">
+                                    <div className="text-center group-hover:scale-105 transition-transform duration-500">
+                                        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 text-muted-foreground/30 border border-white/5">
+                                            <Plus size={32} />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Drop new logic node</p>
                                     </div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Drop new chart here</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+                )
+            ) : (
+                <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6 text-zinc-700">
+                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center">
+                        <TrendingUp size={48} />
+                    </div>
+                    <div className="max-w-sm space-y-2">
+                        <h3 className="text-2xl font-bold">Analysis Engine Offline</h3>
+                        <p className="text-muted-foreground font-medium">
+                            Please upload a dataset to begin visual synthesis. We accommodate Excel, CSV, PDF, and DOCX formats.
+                        </p>
+                    </div>
+                    <button
+                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20"
+                        onClick={() => navigate('/upload')}
+                    >
+                        Go to Ingestion Zone
+                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
                 </div>
             )}
         </div>

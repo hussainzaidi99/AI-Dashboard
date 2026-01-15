@@ -2,7 +2,7 @@ import apiClient from './client';
 
 export const processingApi = {
     start: async (fileId, options = {}) => {
-        const response = await apiClient.post('/processing/process', {
+        const response = await apiClient.post('/processing', {
             file_id: fileId,
             ...options
         });

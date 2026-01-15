@@ -38,7 +38,7 @@ class DashboardRequest(BaseModel):
     max_charts: int = 6
 
 
-@router.post("/charts/create")
+@router.post("/create")
 async def create_chart(request: ChartRequest):
     """
     Create a chart from data
@@ -88,7 +88,7 @@ async def create_chart(request: ChartRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/charts/recommend")
+@router.post("/recommend")
 async def recommend_charts(
     file_id: str,
     sheet_index: int = 0,
@@ -146,7 +146,7 @@ async def recommend_charts(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/charts/dashboard")
+@router.post("/dashboard")
 async def create_dashboard(request: DashboardRequest):
     """
     Create an auto-generated dashboard
@@ -156,6 +156,20 @@ async def create_dashboard(request: DashboardRequest):
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
         
+        has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+        
+        if not has_dataframes:
+            # Return empty dashboard for text-only files
+            return {
+                "dashboard_id": "text_dashboard",
+                "title": request.title,
+                "description": "Document contains primarily text. Use the AI Intelligence Hub for analysis.",
+                "widget_count": 0,
+                "widgets": [],
+                "created_at": None,
+                "is_text_only": True
+            }
+
         if request.sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
         
@@ -196,7 +210,7 @@ async def create_dashboard(request: DashboardRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/charts/types")
+@router.get("/types")
 async def get_chart_types():
     """
     Get list of available chart types
@@ -216,7 +230,7 @@ async def get_chart_types():
     }
 
 
-@router.post("/charts/correlation")
+@router.post("/correlation")
 async def create_correlation_matrix(
     file_id: str,
     sheet_index: int = 0

@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDataset } from '../context/DatasetContext';
 import { dataApi } from '../api/data';
 import { aiApi } from '../api/ai';
+import { chartsApi } from '../api/charts';
 import { processingApi } from '../api/processing';
 import VizWidget from '../components/visualizations/VizWidget';
 import { motion } from 'framer-motion';
@@ -46,42 +47,41 @@ const StatCard = ({ title, value, change, trend, icon: Icon, color, loading }) =
 const Overview = () => {
     const { activeFileId, activeSheetIndex, hasActiveDataset } = useDataset();
 
-    // Fetch Statistics
+    // Fetch Statistics with caching
     const { data: stats, isLoading: statsLoading } = useQuery({
         queryKey: ['stats', activeFileId, activeSheetIndex],
         queryFn: () => dataApi.getStatistics(activeFileId, activeSheetIndex),
-        enabled: hasActiveDataset
+        enabled: hasActiveDataset,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
     });
 
-    // Fetch Insights
+    // Fetch Insights with caching
     const { data: insights, isLoading: insightsLoading } = useQuery({
         queryKey: ['insights', activeFileId, activeSheetIndex],
         queryFn: () => aiApi.getInsights(activeFileId, activeSheetIndex),
-        enabled: hasActiveDataset
+        enabled: hasActiveDataset,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+        retry: 1, // Only retry once on failure
     });
 
-    // Fetch Quality Report (for completeness)
+    // Fetch Quality Report with caching
     const { data: quality, isLoading: qualityLoading } = useQuery({
         queryKey: ['quality', activeFileId, activeSheetIndex],
         queryFn: () => dataApi.getQuality(activeFileId, activeSheetIndex),
-        enabled: hasActiveDataset
+        enabled: hasActiveDataset,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
     });
 
-    // Fetch Dashboard
+    // Fetch Dashboard with caching
     const { data: dashboard, isLoading: dashboardLoading } = useQuery({
         queryKey: ['dashboard', activeFileId, activeSheetIndex],
-        queryFn: async () => {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/charts/dashboard`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ file_id: activeFileId, sheet_index: activeSheetIndex })
-            });
-            return response.json();
-        },
-        enabled: hasActiveDataset
+        queryFn: () => chartsApi.getDashboard(activeFileId, activeSheetIndex),
+        enabled: hasActiveDataset,
+        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
     });
 
     return (
