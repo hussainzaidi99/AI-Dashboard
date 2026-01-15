@@ -60,6 +60,13 @@ const Overview = () => {
         enabled: hasActiveDataset
     });
 
+    // Fetch Quality Report (for completeness)
+    const { data: quality, isLoading: qualityLoading } = useQuery({
+        queryKey: ['quality', activeFileId, activeSheetIndex],
+        queryFn: () => dataApi.getQuality(activeFileId, activeSheetIndex),
+        enabled: hasActiveDataset
+    });
+
     // Fetch Dashboard
     const { data: dashboard, isLoading: dashboardLoading } = useQuery({
         queryKey: ['dashboard', activeFileId, activeSheetIndex],
@@ -126,14 +133,14 @@ const Overview = () => {
                 <StatCard
                     title="Missing Cells"
                     value={stats?.null_counts_sum || '0'}
-                    change={5} trend="down" icon={TrendingUp} color="emerald-400"
+                    change={stats?.null_percent?.toFixed(1) || '0'} trend="down" icon={TrendingUp} color="emerald-400"
                     loading={statsLoading}
                 />
                 <StatCard
                     title="Completeness"
-                    value="98.2%"
-                    change={2} trend="up" icon={MousePointer2} color="amber-400"
-                    loading={statsLoading}
+                    value={quality?.scores?.completeness ? `${(quality.scores.completeness * 100).toFixed(1)}%` : '---'}
+                    change={Math.round((quality?.scores?.completeness || 0) * 100)} trend="up" icon={MousePointer2} color="amber-400"
+                    loading={qualityLoading}
                 />
             </div>
 

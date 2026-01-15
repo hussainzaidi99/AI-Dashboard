@@ -18,6 +18,7 @@ const VisualAnalysis = () => {
     const [selectedChartType, setSelectedChartType] = useState('bar');
     const [query, setQuery] = useState('');
     const [queryLoading, setQueryLoading] = useState(false);
+    const [draftWidget, setDraftWidget] = useState(null);
 
     const handleInquiry = async (e) => {
         e.preventDefault();
@@ -34,9 +35,17 @@ const VisualAnalysis = () => {
                 body: JSON.stringify({ file_id: activeFileId, query: query, sheet_index: activeSheetIndex })
             });
             const data = await response.json();
-            console.log('AI Query Result:', data);
-            // In a real app, we would add this new widget to our recommendations or state
-            alert("AI has parsed your query! New visualization logic would be injected here.");
+            if (data.parsed) {
+                setDraftWidget({
+                    title: `AI Result: ${query}`,
+                    description: `Generated based on your inquiry: "${query}". Confidence: ${Math.round(data.parsed.confidence * 100)}%`,
+                    chart: {
+                        type: data.parsed.chart_type,
+                        labels: [], // Backend would ideally provide data here or we fetch it
+                        datasets: []
+                    }
+                });
+            }
         } catch (err) {
             console.error('Inquiry error:', err);
         } finally {
@@ -162,6 +171,14 @@ const VisualAnalysis = () => {
                         {/* Visualization Canvas */}
                         <div className="xl:col-span-3 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {draftWidget && (
+                                    <VizWidget
+                                        title={draftWidget.title}
+                                        description={draftWidget.description}
+                                        config={draftWidget.chart}
+                                        isAIResult
+                                    />
+                                )}
                                 {recommendations?.recommendations?.slice(0, 4).map((rec, idx) => (
                                     <VizWidget
                                         key={idx}

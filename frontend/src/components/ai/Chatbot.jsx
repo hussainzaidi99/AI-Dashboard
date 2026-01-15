@@ -10,7 +10,7 @@ const Chatbot = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([
-        { id: 1, type: 'bot', text: 'Hello! I am Tim Buddy. How can I help you today?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { id: 1, type: 'bot', text: 'Hello! I am AI Assistant from AI Analytics. How can I help you today?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
     ]);
     const messagesEndRef = useRef(null);
 
@@ -98,11 +98,11 @@ const Chatbot = () => {
                         {/* Header */}
                         <div className="p-5 bg-white/5 border-b border-white/10 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
-                                    <img src="https://avatar.vercel.sh/tim" alt="Tim Buddy" className="w-full h-full object-cover" />
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black flex items-center justify-center text-white shadow-lg overflow-hidden border border-white/10">
+                                    <Sparkles size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-sm">Tim Buddy</h3>
+                                    <h3 className="font-bold text-sm">Intelligence Assistant</h3>
                                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium uppercase tracking-widest">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                         Online
