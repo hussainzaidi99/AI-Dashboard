@@ -325,52 +325,48 @@ class InsightGenerator:
         insights: List[DataInsight],
         user_question: Optional[str] = None
     ) -> str:
-        """Generate AI-powered natural language summary of insights"""
+        """Generate a production-level, high-impact summary of data insights"""
         
-        # Prepare summary of data with compression
+        # Prepare distilled context
         data_summary = f"""
-Dataset Overview:
-- Total Rows: {len(df)}
-- Total Columns: {len(df.columns)}
-- Sample Columns (upto 40): {', '.join(df.columns[:40].tolist())}
-- Data Types: {df.dtypes.head(40).to_dict()}
-
-Key Insights Found: {len(insights)}
+Dataset: {len(df)} rows, {len(df.columns)} columns.
+Top Findings: {len(insights)} total.
+{"User Interest: " + user_question if user_question else ""}
 """
         
-        # Add top insights
-        for i, insight in enumerate(insights[:5], 1):
-            data_summary += f"\n{i}. [{insight.severity.upper()}] {insight.title}: {insight.description}"
+        # Add distilled insights (only top 3, very brief)
+        for i, insight in enumerate(insights[:3], 1):
+            data_summary += f"\n- {insight.title}: {insight.description}"
         
-        if user_question:
-            data_summary += f"\n\nUser Question: {user_question}"
-        
-        # Generate AI summary
-        system_message = """You are a data analysis expert. 
-Provide a clear, concise summary of the data insights in natural language.
-Focus on actionable insights and important patterns.
-Be professional but conversational."""
+        # Production-level high-end prompt
+        system_message = """You are a high-end AI Data Scientist (Gemini/ChatGPT style).
+Your goal is to provide extreme value with minimal words.
+Tone: Professional, authoritative, and concise.
+Rules:
+- NO introductory boilerplate (e.g., "Here is the summary...")
+- NO redundant explanations of what the data/information is (unless asked)
+- Use brief bullet points for takeaways
+- Focus on quality, density, and impact
+- Max length: 150 words."""
         
         prompt = f"""{data_summary}
 
-Provide a comprehensive summary of these insights in 3-4 paragraphs:
-1. Overall data quality and characteristics
-2. Key patterns and trends discovered
-3. Important correlations or relationships
-4. Recommendations for next steps
+Synthesize these findings into a "Document Discovery" overview:
+1. One-sentence high-level verdict.
+2. 3-4 ultra-concise takeaways (impact-focused).
+3. One critical next step.
 
-Keep it clear and actionable."""
+Keep it tight. Quality > Quantity."""
         
         try:
             summary = await self.llm.generate(
                 prompt=prompt,
                 system_message=system_message
             )
-            return summary
+            return summary.strip()
         
         except Exception as e:
             logger.error(f"Failed to generate AI summary: {str(e)}")
-            # Fallback to basic summary
             return self._generate_basic_summary(insights)
     
     def _generate_basic_summary(self, insights: List[DataInsight]) -> str:

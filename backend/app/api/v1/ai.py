@@ -225,98 +225,123 @@ async def parse_natural_language_query(request: QueryRequest):
 @router.post("/ask")
 async def ask_question(request: AskRequest):
     """
-    Ask a question about the data and get AI response with caching and reduced context
+    Ask a question about the data and get AI response with high-end assistant prompting
     """
     try:
         import hashlib
         from app.core.ai import get_llm_client
         
-        # Check cache first (30-minute TTL for chatbot)
+        # Check cache first (30-minute TTL)
         question_hash = hashlib.md5(request.question.lower().encode()).hexdigest()[:8]
         cache_key = f"chatbot:{request.file_id}:{question_hash}"
         cached_answer = cache_manager.get(cache_key)
         if cached_answer:
-            logger.info(f"Returning cached chatbot answer for question: {request.question[:50]}...")
+            logger.info(f"Returning cached chatbot answer for: {request.question[:30]}...")
             return cached_answer
         
         data = await get_processed_data(request.file_id)
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
         
-        has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
-        
-        if has_dataframes and request.sheet_index >= len(data['dataframes']):
-            raise HTTPException(status_code=400, detail="Sheet index out of range")
-        
-        # Prepare REDUCED data context (to save tokens)
-        data_context = ""
-        
-        if has_dataframes:
-            # Get DataFrame
-            sheet_data = data['dataframes'][request.sheet_index]
-            df = pd.DataFrame(sheet_data['data'])
-            
-            # OPTIMIZED: Limit columns to 20 and rows to 3
-            limited_columns = df.columns[:20].tolist()
-            
-            data_context = f"""
-Dataset Information:
-- Rows: {len(df) if not df.empty else 0}
-- Columns: {len(df.columns) if not df.empty else 0}
-- Sample Columns (up to 20): {', '.join(limited_columns) if not df.empty else 'None'}
-
-"""
-            if not df.empty:
-                # OPTIMIZED: Only 3 rows and limited columns
-                data_context += f"""
-Sample Data (first 3 rows, up to 20 columns):
-{df[limited_columns].head(3).to_string()}
-
-Summary Statistics (up to 30 columns):
-{df.describe().iloc[:, :30].to_string()}
-"""
-        elif data.get('text_content'):
-            # Use snippet of text content as context if no tables
-            text_snippet = data['text_content'][:4000] # Cap at 4k chars
-            data_context = f"""
-Document Text Content (Snippet):
-{text_snippet}
-"""
-        else:
-            raise HTTPException(status_code=400, detail="No analyzable data (dataframes or text content) found for the file.")
+        data_context = _prepare_data_context(data, request.sheet_index)
         
         # Get LLM client
         llm = get_llm_client()
         
-        # Generate response (Gemini API CALL)
-        system_message = """You are a data analysis expert. 
-Answer questions about the dataset clearly and accurately.
-If you need to calculate something, explain your reasoning."""
+        # Production-level assistant message
+        system_message = """You are a sophisticated AI Data Analyst (Gemini/ChatGPT level).
+Your goal is to provide precise, human-like responses based on the provided context.
+- Be concise. Don't repeat facts multiple times.
+- Synthesize information into natural conversation.
+- If the data is available, answer directly without saying "I found the information".
+- NEVER start with "Here is the answer" or similar boilerplate.
+- Use clean Markdown formatting. Avoid excessive bolding or weird symbols.
+- If you can't find the answer in the context, say so politely.
+- NO extra "how to ask" lists unless the user seems lost."""
         
         response = await llm.generate(
-            prompt=f"{data_context}\n\nUser Question: {request.question}\n\nProvide a clear, helpful answer.",
+            prompt=f"Context:\n{data_context}\n\nUser Question: {request.question}",
             system_message=system_message
         )
         
         result = {
             "file_id": request.file_id,
             "question": request.question,
-            "answer": response
+            "answer": response.strip()
         }
         
-        # Cache the result for 30 minutes (1800 seconds)
         cache_manager.set(cache_key, result, expire=1800)
-        logger.info(f"Cached chatbot answer (30 min TTL)")
-        
         return result
     
-    except ValueError as e:
-        # Rate limit errors
-        logger.error(f"AI service error: {str(e)}")
-        raise HTTPException(status_code=429, detail=str(e))
     except Exception as e:
         logger.error(f"Error answering question: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ask/stream")
+async def stream_ask_question(request: AskRequest):
+    """
+    Stream a response to a data question (Production-level real-time interaction)
+    """
+    from fastapi.responses import StreamingResponse
+    import json
+    
+    async def event_generator():
+        try:
+            from app.core.ai import get_llm_client
+            
+            data = await get_processed_data(request.file_id)
+            if not data:
+                yield f"data: {json.dumps({'error': 'Data not found'})}\n\n"
+                return
+            
+            data_context = _prepare_data_context(data, request.sheet_index)
+            llm = get_llm_client()
+            
+            system_message = """You are a world-class AI Data Assistant (Gemini style).
+Provide a high-quality, concise, and fluid response.
+- Start directly with the answer.
+- Focus on synthesis and insight.
+- No boilerplate, no fluff.
+- Use simple, professional Markdown."""
+            
+            async for token in llm.stream(
+                prompt=f"Context:\n{data_context}\n\nUser: {request.question}",
+                system_message=system_message
+            ):
+                yield f"data: {json.dumps({'token': token})}\n\n"
+            
+            yield "data: [DONE]\n\n"
+            
+        except Exception as e:
+            logger.error(f"Streaming error: {str(e)}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+def _prepare_data_context(data: dict, sheet_index: int = 0) -> str:
+    """Helper to extract and format data context for LLM"""
+    has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+    
+    if has_dataframes:
+        if sheet_index >= len(data['dataframes']):
+            return "Error: Sheet index out of range."
+            
+        sheet_data = data['dataframes'][sheet_index]
+        df = pd.DataFrame(sheet_data['data'])
+        cols = df.columns[:20].tolist()
+        
+        context = f"Table Discovery: {len(df)} rows, {len(df.columns)} columns.\n"
+        context += f"Headers: {', '.join(cols)}\n"
+        context += f"Data Sample (First 3 rows):\n{df[cols].head(3).to_string()}\n"
+        context += f"Stats:\n{df.describe().iloc[:, :len(cols)].head(4).to_string()}"
+        return context
+    
+    elif data.get('text_content'):
+        return f"Document Content Snippet: {data['text_content'][:4000]}"
+    
+    return "No contextual data found."
 
 
 @router.get("/ai/capabilities")

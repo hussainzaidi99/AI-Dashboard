@@ -19,13 +19,13 @@ const Chatbot = () => {
             let greeting = "Hello! I am your AI Intelligence Assistant. How can I help you navigate your data today?";
 
             if (!hasActiveDataset) {
-                greeting = "Welcome! I'm ready to analyze your data. Please head over to the 'Data Ingestion' zone to upload a CSV, Excel, or Word document to get started.";
+                greeting = "Welcome! I'm your AI data assistant. Upload a dataset in the ingestion zone to get started.";
             } else if (location.pathname.includes('upload')) {
-                greeting = `I see you're in the ingestion zone. We're currently following "${activeFileName}". Would you like to upload another, or should we head to Visual Analysis?`;
+                greeting = `I'm following "${activeFileName}". Would you like to head to analysis or upload more data?`;
             } else if (location.pathname.includes('analysis')) {
-                greeting = `Ready for deep dive! We have "${activeFileName}" loaded. Try asking me something like 'Show me trends' or 'What are the key correlations?'`;
+                greeting = `Ready to analyze "${activeFileName}". What insights can I discover for you?`;
             } else if (activeFileName) {
-                greeting = `Hi! I'm ready to assist with "${activeFileName}". We've extracted several entities already—what's on your mind?`;
+                greeting = `Assisting with "${activeFileName}". How can I help with your analysis?`;
             }
 
             setMessages([
@@ -50,7 +50,7 @@ const Chatbot = () => {
 
     const handleSend = async (e) => {
         e.preventDefault();
-        if (!message.trim()) return;
+        if (!message.trim() || loading) return;
 
         const userText = message;
         const newUserMsg = {
@@ -64,34 +64,87 @@ const Chatbot = () => {
         setMessage('');
         setLoading(true);
 
-        try {
-            let responseText = "";
+        // Add a placeholder bot message for streaming
+        const botMsgId = Date.now() + 1;
+        const botMsgPlaceholder = {
+            id: botMsgId,
+            type: 'bot',
+            text: '',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isStreaming: true
+        };
+        setMessages(prev => [...prev, botMsgPlaceholder]);
 
-            if (hasActiveDataset) {
-                const response = await aiApi.askQuestion(activeFileId, userText, activeSheetIndex);
-                responseText = response.answer;
-            } else {
-                responseText = "I'm ready to analyze your data, but you haven't uploaded a file yet! Please visit the Ingestion Zone and I'll walk you through the process.";
+        try {
+            if (!hasActiveDataset) {
+                updateBotMessage(botMsgId, "I'm ready to analyze your data, but you haven't uploaded a file yet! Please visit the Ingestion Zone and I'll walk you through the process.");
+                setLoading(false);
+                return;
             }
 
-            const botMsg = {
-                id: Date.now() + 1,
-                type: 'bot',
-                text: responseText,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setMessages(prev => [...prev, botMsg]);
+            const token = sessionStorage.getItem('token');
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/ai/ask/stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({
+                    file_id: activeFileId,
+                    question: userText,
+                    sheet_index: activeSheetIndex
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to start stream');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedText = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6).trim();
+                        if (dataStr === '[DONE]') continue;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.token) {
+                                accumulatedText += data.token;
+                                updateBotMessage(botMsgId, accumulatedText);
+                                if (loading) setLoading(false); // Stop bounce as soon as tokens arrive
+                            } else if (data.error) {
+                                updateBotMessage(botMsgId, `Error: ${data.error}`);
+                            }
+                        } catch (e) {
+                            console.error("Error parsing stream chunk", e);
+                        }
+                    }
+                }
+            }
+
+            // Mark stream as complete
+            setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, isStreaming: false } : m));
+
         } catch (err) {
-            const botMsg = {
-                id: Date.now() + 1,
-                type: 'bot',
-                text: "I'm having trouble connecting to my brain right now. Please check if the backend is running!",
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setMessages(prev => [...prev, botMsg]);
+            console.error('Chat error:', err);
+            updateBotMessage(botMsgId, "I'm having trouble connecting to my brain right now. Please check if the backend is running!");
         } finally {
             setLoading(false);
         }
+    };
+
+    const updateBotMessage = (id, text) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === id ? { ...msg, text } : msg
+        ));
     };
 
     return (
@@ -158,8 +211,8 @@ const Chatbot = () => {
                                             <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.type === 'user'
                                                 ? 'bg-white/10 border border-white/20 text-white rounded-tr-none'
                                                 : 'bg-white/5 border border-white/10 text-white/90 rounded-tl-none font-medium'
-                                                }`}>
-                                                {msg.text}
+                                                } ${msg.isStreaming ? 'animate-pulse border-white/20' : ''}`}>
+                                                {msg.text || (msg.isStreaming ? '...' : '')}
                                             </div>
                                             <p className={`text-[10px] text-muted-foreground ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
                                                 {msg.time}

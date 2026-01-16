@@ -132,6 +132,36 @@ class LLMClient:
             # Generic error
             logger.error(f"LLM generation error: {str(e)}")
             raise ValueError(f"AI service error: {str(e)}")
+
+    async def stream(
+        self,
+        prompt: str,
+        system_message: Optional[str] = None,
+        **kwargs
+    ):
+        """Stream response from LLM token by token"""
+        try:
+            messages = []
+            
+            if system_message:
+                messages.append(("system", system_message))
+            
+            messages.append(("human", prompt))
+            
+            async for chunk in self.llm.astream(messages, **kwargs):
+                if hasattr(chunk, 'content'):
+                    yield chunk.content
+                else:
+                    yield str(chunk)
+                    
+        except Exception as e:
+            error_msg = str(e).lower()
+            logger.error(f"LLM streaming error: {str(e)}")
+            
+            if "rate" in error_msg or "limit" in error_msg or "429" in error_msg:
+                yield f"\n[Rate Limit Exceeded: {str(e)}]"
+            else:
+                yield f"\n[AI Service Error: {str(e)}]"
     
     def generate_sync(
         self,
