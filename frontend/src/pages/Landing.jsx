@@ -1,11 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Sparkles, ArrowUpRight, BarChart3, Search, Activity, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ArrowUpRight, BarChart3, Search, Activity, Zap, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import LightRays from '../components/backgrounds/LightRays';
+import { useAuth } from '../context/AuthContext';
 
 const Landing = () => {
     const navigate = useNavigate();
+    const { isAuthenticated, user, logout } = useAuth();
+    const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+
+    const initials = user?.email?.substring(0, 2).toUpperCase() || 'AI';
 
     return (
         <div className="relative min-h-screen bg-[#000000] text-foreground overflow-hidden font-sans selection:bg-white/20 text-white">
@@ -41,18 +46,87 @@ const Landing = () => {
                 </nav>
 
                 <div className="flex items-center gap-6">
-                    <button
-                        onClick={() => navigate('/login')}
-                        className="text-sm font-bold text-muted-foreground hover:text-white transition-colors"
-                    >
-                        Sign In
-                    </button>
-                    <button
-                        onClick={() => navigate('/register')}
-                        className="h-11 px-6 rounded-2xl bg-white text-black font-extrabold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:bg-neutral-200 active:scale-95 transition-all text-sm"
-                    >
-                        Get Started
-                    </button>
+                    {isAuthenticated ? (
+                        /* Profile Dropdown for Authenticated Users */
+                        <div className="relative z-50">
+                            <button
+                                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                className="flex items-center gap-3 p-1.5 pl-2 rounded-2xl hover:bg-white/5 transition-all group border border-transparent hover:border-white/10"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-black font-black text-sm shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all group-hover:bg-neutral-200">
+                                    {initials}
+                                </div>
+                                <div className="hidden lg:block text-left mr-1">
+                                    <p className="text-sm font-semibold leading-none text-white/80">{user?.email?.split('@')[0] || 'User'}</p>
+                                    <p className="text-[10px] text-zinc-500 font-bold mt-1 uppercase tracking-wider">USER</p>
+                                </div>
+                                <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isProfileOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-[60]"
+                                            onClick={() => setIsProfileOpen(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute right-0 mt-3 w-64 glass-card rounded-2xl border border-white/10 p-2 shadow-2xl z-[70] overflow-hidden"
+                                        >
+                                            <div className="p-4 border-b border-white/5 mb-2">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Authenticated Account</p>
+                                                <p className="text-sm font-medium truncate">{user?.email}</p>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => navigate('/dashboard')}
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium"
+                                                >
+                                                    <BarChart3 size={18} className="text-white/60" />
+                                                    Go to Dashboard
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium">
+                                                    <User size={18} className="text-white/60" />
+                                                    View Profile
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium">
+                                                    <Settings size={18} className="text-muted-foreground" />
+                                                    Account Settings
+                                                </button>
+                                                <button
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-destructive active:scale-95"
+                                                    onClick={logout}
+                                                >
+                                                    <LogOut size={18} />
+                                                    Sign Out
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    ) : (
+                        /* Sign In / Get Started for Guests */
+                        <>
+                            <button
+                                onClick={() => navigate('/login')}
+                                className="text-sm font-bold text-muted-foreground hover:text-white transition-colors"
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                onClick={() => navigate('/register')}
+                                className="h-11 px-6 rounded-2xl bg-white text-black font-extrabold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:bg-neutral-200 active:scale-95 transition-all text-sm"
+                            >
+                                Get Started
+                            </button>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -81,10 +155,10 @@ const Landing = () => {
 
                         <div className="flex flex-wrap items-center justify-center gap-5">
                             <button
-                                onClick={() => navigate('/register')}
+                                onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
                                 className="h-16 px-10 rounded-2xl bg-white text-black text-lg font-black shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_40px_rgba(255,255,255,0.25)] hover:bg-[#f8fafc] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3"
                             >
-                                Start for Free
+                                {isAuthenticated ? 'Go to Dashboard' : 'Start for Free'}
                                 <ArrowUpRight size={22} strokeWidth={3} />
                             </button>
                             <button className="h-16 px-10 rounded-2xl bg-white/5 border border-white/10 text-white text-lg font-bold hover:bg-white/10 transition-all backdrop-blur-sm">
