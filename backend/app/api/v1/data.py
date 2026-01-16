@@ -13,6 +13,7 @@ import logging
 from app.core.analyzers import DataProfiler, StatisticalAnalyzer, QualityChecker
 from app.models.mongodb_models import FileUpload, DataProfile, QualityReport
 from app.utils.cache import cache_manager
+from app.utils.data_persistence import get_processed_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -23,51 +24,15 @@ class DataRequest(BaseModel):
     sheet_index: Optional[int] = 0
 
 
-@router.get("/{file_id}")
-async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 100):
-    """
-    Get data from a processed file
-    """
-    # Check if file exists in MongoDB
-    file_upload = await FileUpload.find_one(FileUpload.file_id == file_id)
-    if not file_upload:
-        raise HTTPException(status_code=404, detail="File not found")
-        
-    data = cache_manager.get(f"processed_result:{file_id}")
-    if not data:
-        raise HTTPException(status_code=404, detail="Data not found in cache. Please process the file first.")
-    
-    if sheet_index >= len(data['dataframes']):
-        raise HTTPException(status_code=400, detail=f"Sheet index {sheet_index} out of range")
-    
-    sheet_data = data['dataframes'][sheet_index]
-    
-    # Limit rows if requested
-    if limit and limit < len(sheet_data['data']):
-        limited_data = sheet_data['data'][:limit]
-    else:
-        limited_data = sheet_data['data']
-    
-    return {
-        "file_id": file_id,
-        "sheet_name": sheet_data['sheet_name'],
-        "total_rows": sheet_data['rows'],
-        "total_columns": sheet_data['columns'],
-        "columns": sheet_data['column_names'],
-        "data": limited_data,
-        "showing_rows": len(limited_data)
-    }
-
-
 @router.get("/profile")
 async def profile_data(file_id: str, sheet_index: int = 0):
     """
     Generate data profile for a dataset
     """
     try:
-        data = cache_manager.get(f"processed_result:{file_id}")
+        data = await get_processed_data(file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
@@ -99,8 +64,8 @@ async def profile_data(file_id: str, sheet_index: int = 0):
             }
         
         profile_result = {
-            "file_id": request.file_id,
-            "sheet_index": request.sheet_index,
+            "file_id": file_id,
+            "sheet_index": sheet_index,
             "total_rows": profile.total_rows,
             "total_columns": profile.total_columns,
             "memory_usage": profile.memory_usage,
@@ -130,9 +95,9 @@ async def analyze_statistics(file_id: str, sheet_index: int = 0):
     Perform statistical analysis on dataset
     """
     try:
-        data = cache_manager.get(f"processed_result:{file_id}")
+        data = await get_processed_data(file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
         
@@ -206,9 +171,9 @@ async def check_quality(file_id: str, sheet_index: int = 0):
     Check data quality
     """
     try:
-        data = cache_manager.get(f"processed_result:{file_id}")
+        data = await get_processed_data(file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
         
@@ -289,9 +254,9 @@ async def get_columns(file_id: str, sheet_index: int = 0):
     """
     Get column information for a dataset
     """
-    data = cache_manager.get(f"processed_result:{file_id}")
+    data = await get_processed_data(file_id)
     if not data:
-        raise HTTPException(status_code=404, detail="Data not found in cache")
+        raise HTTPException(status_code=404, detail="Data not found")
     
     if sheet_index >= len(data['dataframes']):
         raise HTTPException(status_code=400, detail="Sheet index out of range")
@@ -304,4 +269,40 @@ async def get_columns(file_id: str, sheet_index: int = 0):
         "sheet_name": sheet_data['sheet_name'],
         "columns": sheet_data['column_names'],
         "dtypes": sheet_data['dtypes']
+    }
+
+
+@router.get("/{file_id}")
+async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 100):
+    """
+    Get data from a processed file
+    """
+    # Check if file exists in MongoDB
+    file_upload = await FileUpload.find_one(FileUpload.file_id == file_id)
+    if not file_upload:
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    data = await get_processed_data(file_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Data not found. Please process the file first.")
+    
+    if sheet_index >= len(data['dataframes']):
+        raise HTTPException(status_code=400, detail=f"Sheet index {sheet_index} out of range")
+    
+    sheet_data = data['dataframes'][sheet_index]
+    
+    # Limit rows if requested
+    if limit and limit < len(sheet_data['data']):
+        limited_data = sheet_data['data'][:limit]
+    else:
+        limited_data = sheet_data['data']
+    
+    return {
+        "file_id": file_id,
+        "sheet_name": sheet_data['sheet_name'],
+        "total_rows": sheet_data['rows'],
+        "total_columns": sheet_data['columns'],
+        "columns": sheet_data['column_names'],
+        "data": limited_data,
+        "showing_rows": len(limited_data)
     }

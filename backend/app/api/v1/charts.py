@@ -14,6 +14,7 @@ import json
 from app.core.visualizers import ChartFactory, DashboardBuilder
 from app.models.mongodb_models import FileUpload, ChartData, Dashboard as MongoDBDashboard
 from app.utils.cache import cache_manager
+from app.utils.data_persistence import get_processed_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -49,9 +50,9 @@ async def create_chart(request: ChartRequest):
         if not file_upload:
             raise HTTPException(status_code=404, detail="File not found")
             
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = await get_processed_data(request.file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         if request.sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
@@ -105,9 +106,9 @@ async def recommend_charts(
         if not file_upload:
             raise HTTPException(status_code=404, detail="File not found")
             
-        data = cache_manager.get(f"processed_result:{file_id}")
+        data = await get_processed_data(file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
@@ -152,7 +153,12 @@ async def create_dashboard(request: DashboardRequest):
     Create an auto-generated dashboard
     """
     try:
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        # Check if file exists in MongoDB
+        file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
+        if not file_upload:
+            raise HTTPException(status_code=404, detail="File not found")
+            
+        data = await get_processed_data(request.file_id)
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
         
@@ -244,9 +250,9 @@ async def create_correlation_matrix(
         if not file_upload:
             raise HTTPException(status_code=404, detail="File not found")
             
-        data = cache_manager.get(f"processed_result:{file_id}")
+        data = await get_processed_data(file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")

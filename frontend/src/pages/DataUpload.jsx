@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, FileText, History, Info } from 'lucide-react';
+import { Database, FileText, History, Info, Trash2 } from 'lucide-react';
 import FileUploader from '../components/data/FileUploader';
 import { useDataset } from '../context/DatasetContext';
 import { useQuery } from '@tanstack/react-query';
@@ -27,6 +27,23 @@ const DataUpload = () => {
     const selectFile = (file) => {
         setActiveFileId(file.file_id);
         setActiveFileName(file.filename);
+    };
+
+    const handleDeleteFile = async (e, fileId) => {
+        e.stopPropagation();
+        if (window.confirm('Are you sure you want to delete this dataset? This will clear all analysis and insights.')) {
+            try {
+                await fileApi.delete(fileId);
+                if (activeFileId === fileId) {
+                    setActiveFileId(null);
+                    setActiveFileName(null);
+                }
+                refetch();
+            } catch (err) {
+                console.error('Error deleting file:', err);
+                alert('Failed to delete file');
+            }
+        }
     };
 
     return (
@@ -112,14 +129,14 @@ const DataUpload = () => {
                                 key={file.file_id}
                                 onClick={() => selectFile(file)}
                                 className={`flex items-center justify-between p-6 glass-card rounded-2xl border transition-all text-left group ${activeFileId === file.file_id
-                                        ? 'border-primary bg-primary/5 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                                        : 'border-white/5 hover:border-white/10 hover:bg-white/5'
+                                    ? 'border-white bg-white/5 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
+                                    : 'border-white/5 hover:border-white/10 hover:bg-white/5'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activeFileId === file.file_id ? 'bg-primary/20 text-primary' : 'bg-white/5 text-muted-foreground group-hover:text-white'
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activeFileId === file.file_id ? 'bg-white text-black' : 'bg-white/5 text-muted-foreground group-hover:text-white'
                                         }`}>
-                                        <FileText size={24} />
+                                        <FileText size={20} />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm mb-1">{file.filename}</h4>
@@ -133,16 +150,25 @@ const DataUpload = () => {
                                     </div>
                                 </div>
 
-                                {activeFileId === file.file_id ? (
-                                    <div className="flex items-center gap-2 text-primary">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest">Active</span>
-                                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                    </div>
-                                ) : (
-                                    <span className="text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                                        Switch to Dataset
-                                    </span>
-                                )}
+                                <div className="flex items-center gap-4">
+                                    {activeFileId === file.file_id ? (
+                                        <div className="flex items-center gap-2 text-white">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Active</span>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                                            Switch
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={(e) => handleDeleteFile(e, file.file_id)}
+                                        className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                        title="Delete Dataset"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </button>
                         ))
                     )}

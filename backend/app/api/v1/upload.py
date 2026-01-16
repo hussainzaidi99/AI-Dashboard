@@ -14,6 +14,7 @@ import logging
 
 from app.config import settings, is_allowed_file, get_upload_path
 from app.models.mongodb_models import FileUpload
+from app.utils.cache import cache_manager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -196,6 +197,15 @@ async def delete_file(file_id: str):
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.info(f"Deleted physical file: {file_path}")
+            
+        # Delete persistence JSON file if exists
+        try:
+            persistence_path = get_upload_path(f"{file_id}.json")
+            if os.path.exists(persistence_path):
+                os.remove(persistence_path)
+                logger.info(f"Deleted persistence file: {persistence_path}")
+        except Exception as pe:
+            logger.warning(f"Error deleting persistence file: {str(pe)}")
         
         # Delete from database
         await file_upload.delete()

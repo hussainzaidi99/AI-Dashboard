@@ -18,20 +18,31 @@ export const DatasetProvider = ({ children }) => {
     useEffect(() => {
         if (activeFileId) {
             localStorage.setItem('activeFileId', activeFileId);
-            // Fetch metadata if missing
-            if (!activeFileName) {
-                fileApi.getStatus(activeFileId).then(data => {
+
+            // Check if file actually exists on server
+            fileApi.getStatus(activeFileId).then(data => {
+                if (data.filename) {
                     setActiveFileName(data.filename);
                     localStorage.setItem('activeFileName', data.filename);
-                }).catch(err => console.error("Failed to fetch file status:", err));
-            }
+                }
+            }).catch(err => {
+                console.warn("File no longer exists on server, clearing session:", activeFileId);
+                // Clear state if file not found (404)
+                setActiveFileId(null);
+                setActiveFileName(null);
+                localStorage.removeItem('activeFileId');
+                localStorage.removeItem('activeFileName');
+            });
 
             // Fetch processing result to check type
             import('../api/processing').then(({ processingApi }) => {
                 processingApi.getResult(activeFileId).then(data => {
                     setIsTextOnly(data.dataframes?.length === 0);
                     setTextContent(data.text_content || '');
-                }).catch(err => console.error("Failed to fetch processing result:", err));
+                }).catch(err => {
+                    // Non-critical, might still be processing
+                    console.log("Processing result not yet available");
+                });
             });
         } else {
             localStorage.removeItem('activeFileId');
@@ -39,7 +50,7 @@ export const DatasetProvider = ({ children }) => {
             setActiveFileName(null);
             setActiveMetadata(null);
         }
-    }, [activeFileId, activeFileName]);
+    }, [activeFileId]);
 
     return (
         <DatasetContext.Provider

@@ -101,13 +101,13 @@ const Chatbot = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all duration-300 ${isOpen ? 'bg-zinc-800 rotate-90' : 'bg-primary'
+                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 ${isOpen ? 'bg-white/10 rotate-90 scale-90' : 'bg-white text-black hover:scale-110 shadow-white/10'
                     }`}
             >
-                {isOpen ? <X className="text-white" size={28} /> : (
+                {isOpen ? <X size={24} /> : (
                     <div className="relative">
-                        <MessageSquare className="text-white" size={28} />
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-primary" />
+                        <MessageSquare size={28} />
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
                     </div>
                 )}
             </motion.button>
@@ -150,14 +150,14 @@ const Chatbot = () => {
                             {messages.map((msg) => (
                                 <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`flex gap-3 max-w-[85%] ${msg.type === 'user' ? 'flex-row-reverse' : ''}`}>
-                                        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${msg.type === 'user' ? 'bg-primary text-white' : 'bg-white/10 text-primary'
+                                        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${msg.type === 'user' ? 'bg-white text-black' : 'bg-white/10 text-white/70'
                                             }`}>
                                             {msg.type === 'user' ? <User size={16} /> : <Bot size={16} />}
                                         </div>
                                         <div className="space-y-1">
                                             <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.type === 'user'
-                                                ? 'bg-primary text-white rounded-tr-none'
-                                                : 'bg-white/5 border border-white/10 rounded-tl-none'
+                                                ? 'bg-white/10 border border-white/20 text-white rounded-tr-none'
+                                                : 'bg-white/5 border border-white/10 text-white/90 rounded-tl-none font-medium'
                                                 }`}>
                                                 {msg.text}
                                             </div>
@@ -175,10 +175,10 @@ const Chatbot = () => {
                                             <Bot size={16} />
                                         </div>
                                         <div className="bg-white/5 border border-white/10 px-4 py-3 rounded-2xl rounded-tl-none">
-                                            <div className="flex gap-1">
-                                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
-                                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce delay-75" />
-                                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce delay-150" />
+                                            <div className="flex gap-1.5 py-1">
+                                                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
+                                                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce delay-75" />
+                                                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce delay-150" />
                                             </div>
                                         </div>
                                     </div>
@@ -195,15 +195,15 @@ const Chatbot = () => {
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     placeholder="Ask me anything..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-14 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-14 py-4 text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all placeholder:text-muted-foreground"
                                 />
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50">
                                     <Sparkles size={18} />
                                 </div>
                                 <button
                                     type="submit"
                                     disabled={!message.trim() || loading}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-blue-600 disabled:opacity-50 disabled:hover:bg-primary transition-all shadow-lg"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center hover:bg-neutral-200 disabled:opacity-20 disabled:hover:bg-white transition-all shadow-xl"
                                 >
                                     <Send size={18} />
                                 </button>

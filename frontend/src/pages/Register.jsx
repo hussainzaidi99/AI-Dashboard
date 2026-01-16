@@ -154,11 +154,11 @@ const Register = ({ onToggle }) => {
                 </div>
 
                 <div className="text-center pt-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground font-medium">
                         Already have an account? {' '}
                         <button
                             onClick={onToggle}
-                            className="text-primary font-bold hover:underline"
+                            className="text-white font-black hover:underline underline-offset-4"
                         >
                             Sign In
                         </button>

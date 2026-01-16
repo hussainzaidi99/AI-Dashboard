@@ -17,10 +17,10 @@ import { aiApi } from '../api/ai';
 
 const InsightCard = ({ title, description, icon: Icon, type }) => {
     const typeStyles = {
-        positive: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400',
-        warning: 'border-amber-500/20 bg-amber-500/5 text-amber-400',
-        neutral: 'border-blue-500/20 bg-blue-500/5 text-blue-400',
-        info: 'border-zinc-500/20 bg-zinc-500/5 text-zinc-400'
+        positive: 'border-white/20 bg-white/5 text-white',
+        warning: 'border-white/10 bg-white/[0.02] text-white/70',
+        neutral: 'border-white/5 bg-white/[0.01] text-white/50',
+        info: 'border-white/5 bg-white/[0.01] text-white/40'
     };
 
     return (
@@ -175,8 +175,8 @@ const AIIntelligence = () => {
                                             <ul className="space-y-4">
                                                 {data.insights.slice(3, 5).map((insight, idx) => (
                                                     <li key={idx} className="flex gap-4 items-start group">
-                                                        <div className="mt-1.5 w-2 h-2 rounded-full bg-white/20 group-hover:bg-primary transition-colors flex-shrink-0" />
-                                                        <span className="text-sm font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-white transition-colors flex-shrink-0" />
+                                                        <span className="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">
                                                             {insight.title}: {insight.description}
                                                         </span>
                                                     </li>
@@ -253,13 +253,13 @@ const AIIntelligence = () => {
                                 </div>
 
                                 {isTextOnly && (
-                                    <div className="p-6 rounded-[2rem] bg-primary/10 border border-primary/20 flex flex-col items-center text-center space-y-4">
-                                        <Brain size={32} className="text-primary" />
+                                    <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 flex flex-col items-center text-center space-y-4">
+                                        <Brain size={32} className="text-white" />
                                         <p className="text-sm font-bold text-white">Need deeper analysis?</p>
                                         <p className="text-xs text-zinc-400">Ask the Intelligence Assistant specific questions about the document content.</p>
                                         <button
                                             onClick={() => document.getElementById('chatbot-toggle')?.click()}
-                                            className="px-6 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/80 transition-all"
+                                            className="px-6 py-2 rounded-xl bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-all"
                                         >
                                             Start Q&A
                                         </button>

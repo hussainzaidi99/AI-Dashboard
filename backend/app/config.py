@@ -60,8 +60,12 @@ class Settings:
     CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
     
     # ==================== AI/LLM Configuration ====================
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")  # Required but set empty default
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama-3.1-70b-versatile")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "") # If provided, overrides provider-specific model
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # Options: groq, gemini
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
     
@@ -126,9 +130,12 @@ class Settings:
             "API_V1_PREFIX": self.API_V1_PREFIX,
         }
         
-        # Only require GROQ_API_KEY if AI recommendations are enabled
+        # Only require API key if AI recommendations are enabled
         if self.ENABLE_AI_RECOMMENDATIONS:
-            required_vars["GROQ_API_KEY"] = self.GROQ_API_KEY
+            if self.LLM_PROVIDER == "gemini":
+                required_vars["GEMINI_API_KEY"] = self.GEMINI_API_KEY
+            else:
+                required_vars["GROQ_API_KEY"] = self.GROQ_API_KEY
         
         missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
         
@@ -139,13 +146,21 @@ class Settings:
                 f"Please check your .env file and ensure all variables are set."
             )
         
-        # Special validation for GROQ_API_KEY if enabled
-        if self.ENABLE_AI_RECOMMENDATIONS and (self.GROQ_API_KEY == "your_groq_api_key_here" or not self.GROQ_API_KEY):
-            raise ValueError(
-                "GROQ_API_KEY is not configured but ENABLE_AI_RECOMMENDATIONS is True!\n"
-                "   Please add your actual API key from: https://console.groq.com/\n"
-                "   Edit the .env file and set: GROQ_API_KEY=your_actual_key"
-            )
+        # Special validation for API keys based on provider
+        if self.ENABLE_AI_RECOMMENDATIONS:
+            if self.LLM_PROVIDER == "gemini":
+                if not self.GEMINI_API_KEY or self.GEMINI_API_KEY == "your_gemini_api_key_here":
+                    raise ValueError(
+                        "GEMINI_API_KEY is not configured but ENABLE_AI_RECOMMENDATIONS is True and provider is Gemini!\n"
+                        "   Please add your actual API key to the .env file."
+                    )
+            else:
+                if not self.GROQ_API_KEY or self.GROQ_API_KEY == "your_groq_api_key_here":
+                    raise ValueError(
+                        "GROQ_API_KEY is not configured but ENABLE_AI_RECOMMENDATIONS is True and provider is Groq!\n"
+                        "   Please add your actual API key from: https://console.groq.com/\n"
+                        "   Edit the .env file and set: GROQ_API_KEY=your_actual_key"
+                    )
         
         # Special validation for SECRET_KEY
         if self.SECRET_KEY == "your_secret_key_here_generate_a_secure_random_string":
@@ -224,6 +239,7 @@ if settings.DEBUG:
     print(f"App Version: {settings.APP_VERSION}")
     print(f"API Prefix: {settings.API_V1_PREFIX}")
     print(f"CORS Origins: {', '.join(settings.CORS_ORIGINS)}")
+    print(f"LLM Provider: {settings.LLM_PROVIDER}")
     print(f"LLM Model: {settings.LLM_MODEL}")
     print(f"Chart Theme: {settings.CHART_THEME}")
     print(f"Upload Directory: {settings.UPLOAD_DIR}")

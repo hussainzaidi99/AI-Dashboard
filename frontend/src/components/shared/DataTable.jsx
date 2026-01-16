@@ -12,8 +12,8 @@ const DataTable = ({ data, columns, loading }) => {
     if (loading) {
         return (
             <div className="w-full h-96 flex flex-col items-center justify-center space-y-4">
-                <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <p className="text-muted-foreground font-medium animate-pulse">Syncing table data...</p>
+                <div className="w-10 h-10 border-4 border-white/5 border-t-white rounded-full animate-spin" />
+                <p className="text-white/40 font-black uppercase text-[10px] tracking-widest animate-pulse">Syncing table data...</p>
             </div>
         );
     }
@@ -35,7 +35,7 @@ const DataTable = ({ data, columns, loading }) => {
                     <input
                         type="text"
                         placeholder="Search records..."
-                        className="w-80 h-10 pl-10 pr-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                        className="w-80 h-10 pl-10 pr-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all text-sm"
                     />
                 </div>
                 <div className="flex items-center gap-3">
@@ -89,9 +89,9 @@ const DataTable = ({ data, columns, loading }) => {
                         <ChevronLeft size={18} />
                     </button>
                     <div className="flex items-center gap-1">
-                        <button className="w-8 h-8 rounded-lg bg-primary text-white font-bold text-xs">1</button>
-                        <button className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground font-bold text-xs hover:bg-white/10">2</button>
-                        <button className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground font-bold text-xs hover:bg-white/10">3</button>
+                        <button className="w-8 h-8 rounded-lg bg-white text-black font-black text-xs shadow-xl">1</button>
+                        <button className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground font-bold text-xs hover:bg-white/10 hover:text-white transition-all">2</button>
+                        <button className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground font-bold text-xs hover:bg-white/10 hover:text-white transition-all">3</button>
                     </div>
                     <button className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-white transition-all">
                         <ChevronRight size={18} />

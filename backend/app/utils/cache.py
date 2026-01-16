@@ -67,7 +67,8 @@ class CacheManager:
         self,
         key: str,
         value: Any,
-        expire: Optional[int] = None
+        expire: Optional[int] = None,
+        **kwargs
     ) -> bool:
         """
         Set value in cache
@@ -76,10 +77,14 @@ class CacheManager:
             key: Cache key
             value: Value to cache
             expire: Expiration time in seconds
+            **kwargs: Support for 'ttl' alias
         
         Returns:
             True if successful
         """
+        # Support 'ttl' as an alias for 'expire'
+        if expire is None and 'ttl' in kwargs:
+            expire = kwargs['ttl']
         if not self.enabled:
             return False
             

@@ -13,6 +13,7 @@ import logging
 from app.core.ai import InsightGenerator, QueryParser
 from app.models.mongodb_models import FileUpload
 from app.utils.cache import cache_manager
+from app.utils.data_persistence import get_processed_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -55,9 +56,9 @@ async def generate_insights(request: InsightRequest):
         if not file_upload:
             raise HTTPException(status_code=404, detail="File not found")
             
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = await get_processed_data(request.file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
         
@@ -125,7 +126,7 @@ async def generate_insights(request: InsightRequest):
         }
         
         # Cache the result for 1 hour (3600 seconds)
-        cache_manager.set(cache_key, result, ttl=3600)
+        cache_manager.set(cache_key, result, expire=3600)
         logger.info(f"Cached insights for {request.file_id} (1 hour TTL)")
         
         return result
@@ -153,17 +154,26 @@ async def generate_insights(request: InsightRequest):
 @router.post("/query")
 async def parse_natural_language_query(request: QueryRequest):
     """
-    Parse natural language query and generate visualization
+    Parse natural language query and generate visualization with caching
     """
     try:
+        import hashlib
+        # Check cache first (1-hour TTL)
+        query_hash = hashlib.md5(request.query.lower().strip().encode()).hexdigest()[:10]
+        cache_key = f"query_parse:{request.file_id}:{request.sheet_index}:{query_hash}"
+        cached_result = cache_manager.get(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached query parse for: {request.query[:30]}...")
+            return cached_result
+
         # Check if file exists in MongoDB
         file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
         if not file_upload:
             raise HTTPException(status_code=404, detail="File not found")
             
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = await get_processed_data(request.file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         if request.sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
@@ -200,6 +210,12 @@ async def parse_natural_language_query(request: QueryRequest):
             },
             "message": "Query parsed successfully. Use /charts/create to generate visualization."
         }
+        
+        # Cache the result for 1 hour (3600 seconds)
+        cache_manager.set(cache_key, result, expire=3600)
+        logger.info(f"Cached query parse (1 hour TTL)")
+        
+        return result
     
     except Exception as e:
         logger.error(f"Error parsing query: {str(e)}")
@@ -223,9 +239,9 @@ async def ask_question(request: AskRequest):
             logger.info(f"Returning cached chatbot answer for question: {request.question[:50]}...")
             return cached_answer
         
-        data = cache_manager.get(f"processed_result:{request.file_id}")
+        data = await get_processed_data(request.file_id)
         if not data:
-            raise HTTPException(status_code=404, detail="Data not found in cache")
+            raise HTTPException(status_code=404, detail="Data not found")
         
         has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
         
@@ -272,7 +288,7 @@ Document Text Content (Snippet):
         # Get LLM client
         llm = get_llm_client()
         
-        # Generate response (GROQ API CALL)
+        # Generate response (Gemini API CALL)
         system_message = """You are a data analysis expert. 
 Answer questions about the dataset clearly and accurately.
 If you need to calculate something, explain your reasoning."""
@@ -289,7 +305,7 @@ If you need to calculate something, explain your reasoning."""
         }
         
         # Cache the result for 30 minutes (1800 seconds)
-        cache_manager.set(cache_key, result, ttl=1800)
+        cache_manager.set(cache_key, result, expire=1800)
         logger.info(f"Cached chatbot answer (30 min TTL)")
         
         return result

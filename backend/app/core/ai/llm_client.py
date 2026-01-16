@@ -4,7 +4,6 @@ Handles all LLM interactions with Groq
 """
 #backend/app/core/ai/llm_client.py
 
-from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import LLMChain
 from langchain_core.messages import BaseMessage
@@ -26,24 +25,53 @@ class LLMClient:
         api_key: str = None,
         model: str = None,
         temperature: float = None,
-        max_tokens: int = None
+        max_tokens: int = None,
+        provider: str = None
     ):
-        """Initialize LLM client with Groq"""
-        self.api_key = api_key or settings.GROQ_API_KEY
-        self.model = model or settings.LLM_MODEL
+        """Initialize LLM client with Groq or Gemini"""
+        self.provider = provider or settings.LLM_PROVIDER
         self.temperature = temperature or settings.LLM_TEMPERATURE
         self.max_tokens = max_tokens or settings.LLM_MAX_TOKENS
         
-        # Initialize ChatGroq with a clean http_client to avoid proxy issues
-        self.llm = ChatGroq(
-            groq_api_key=self.api_key,
-            model_name=self.model,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-            http_client=httpx.Client()
-        )
+        # Determine model based on provider if not explicitly passed
+        if model:
+            self.model = model
+        elif settings.LLM_MODEL:
+            self.model = settings.LLM_MODEL
+        else:
+            # Fallback to provider-specific defaults from config
+            self.model = settings.GEMINI_MODEL if self.provider == "gemini" else settings.GROQ_MODEL
         
-        logger.info(f"LLM Client initialized with model: {self.model}")
+        if self.provider == "gemini":
+            try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                self.api_key = api_key or settings.GEMINI_API_KEY
+                self.llm = ChatGoogleGenerativeAI(
+                    google_api_key=self.api_key,
+                    model=self.model,
+                    temperature=self.temperature,
+                    max_output_tokens=self.max_tokens,
+                )
+            except ImportError:
+                logger.error("langchain-google-genai not installed. Run: pip install langchain-google-genai")
+                raise ImportError("langchain-google-genai not installed")
+        else:
+            try:
+                from langchain_groq import ChatGroq
+                self.api_key = api_key or settings.GROQ_API_KEY
+                # Initialize ChatGroq with a clean http_client to avoid proxy issues
+                self.llm = ChatGroq(
+                    groq_api_key=self.api_key,
+                    model_name=self.model,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    http_client=httpx.Client()
+                )
+            except ImportError:
+                logger.error("langchain-groq not installed. Run: pip install langchain-groq")
+                raise ImportError("langchain-groq not installed")
+        
+        logger.info(f"LLM Client initialized with provider: {self.provider}, model: {self.model}")
     
     def create_chain(
         self,
@@ -86,16 +114,16 @@ class LLMClient:
             
             # Check for rate limiting errors
             if "rate" in error_msg or "limit" in error_msg or "429" in error_msg:
-                logger.error(f"Groq API rate limit exceeded: {str(e)}")
+                logger.error(f"{self.provider.capitalize()} API rate limit exceeded: {str(e)}")
                 raise ValueError(
                     "AI service is temporarily unavailable due to rate limits. "
                     "Please try again in a few moments. "
-                    "Tip: Reduce the frequency of AI requests or upgrade to a paid Groq plan."
+                    f"Tip: Reduce the frequency of AI requests or contact support for higher limits."
                 )
             
             # Check for connection errors (often rate limiting in disguise)
             elif "connection" in error_msg:
-                logger.error(f"Groq API connection error (likely rate limiting): {str(e)}")
+                logger.error(f"{self.provider.capitalize()} API connection error (likely rate limiting): {str(e)}")
                 raise ValueError(
                     "AI service is experiencing connectivity issues. "
                     "This is often caused by rate limiting. Please wait 30-60 seconds and try again."

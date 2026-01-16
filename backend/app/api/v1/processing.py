@@ -112,6 +112,16 @@ async def process_file(request: ProcessRequest, background_tasks: BackgroundTask
         }
         cache_manager.set(f"processed_result:{file_id}", result_payload, expire=86400)
         
+        # Store on disk for persistence across restarts (avoids 404s)
+        try:
+            import json
+            persistence_path = get_upload_path(f"{file_id}.json")
+            with open(persistence_path, 'w') as f:
+                json.dump(result_payload, f)
+            logger.info(f"Saved persistence file: {persistence_path}")
+        except Exception as pe:
+            logger.warning(f"Failed to save persistence file: {str(pe)}")
+        
         # Update job status in MongoDB
         await job.update({"$set": {
             "status": "completed",

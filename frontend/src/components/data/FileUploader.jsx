@@ -99,7 +99,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current.click()}
-                        className={`cursor-pointer group relative overflow-hidden rounded-[2.5rem] border-2 border-dashed transition-all duration-300 p-12 text-center ${isDragging ? 'border-primary bg-primary/5' : 'border-white/10 hover:border-primary/30 hover:bg-white/5'
+                        className={`cursor-pointer group relative overflow-hidden rounded-[2.5rem] border-2 border-dashed transition-all duration-300 p-12 text-center ${isDragging ? 'border-white bg-white/10' : 'border-white/10 hover:border-white/40 hover:bg-white/5'
                             }`}
                     >
                         <input
@@ -111,8 +111,8 @@ const FileUploader = ({ onUploadSuccess }) => {
                         />
 
                         <div className="relative z-10">
-                            <div className={`w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 transition-transform duration-500 ${isDragging ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                <Upload className="text-primary" size={36} />
+                            <div className={`w-20 h-20 rounded-3xl bg-white/10 flex items-center justify-center mx-auto mb-6 transition-transform duration-500 ${isDragging ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                <Upload className="text-white" size={36} />
                             </div>
                             <h3 className="text-2xl font-bold mb-2">Drop your data here</h3>
                             <p className="text-muted-foreground mb-6">Support for CSV, Excel, PDF and Word documents</p>
@@ -125,8 +125,8 @@ const FileUploader = ({ onUploadSuccess }) => {
                         </div>
 
                         {/* Background decorative elements */}
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl" />
-                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-white/5 rounded-full blur-3xl opacity-50" />
                     </motion.div>
                 )}
 
@@ -141,7 +141,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                             <svg className="w-full h-full" viewBox="0 0 100 100">
                                 <circle className="text-white/5 stroke-current" strokeWidth="8" fill="transparent" r="42" cx="50" cy="50" />
                                 <motion.circle
-                                    className="text-primary stroke-current"
+                                    className="text-white stroke-current"
                                     strokeWidth="8"
                                     strokeLinecap="round"
                                     fill="transparent"
@@ -161,7 +161,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                                 {uploadState === 'uploading' ? (
                                     <span className="text-xl font-bold">{progress}%</span>
                                 ) : (
-                                    <Loader2 className="animate-spin text-primary" size={32} />
+                                    <Loader2 className="animate-spin text-white" size={32} />
                                 )}
                             </div>
                         </div>
@@ -180,7 +180,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                             </div>
                             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                 <motion.div
-                                    className="h-full bg-primary"
+                                    className="h-full bg-white"
                                     animate={{
                                         width: uploadState === 'uploading' ? `${progress}%` : '100%',
                                         opacity: uploadState === 'processing' ? [0.4, 1, 0.4] : 1
@@ -219,7 +219,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                             </button>
                             <button
                                 onClick={() => navigate(isTextOnly ? '/intelligence' : '/dashboard')}
-                                className="px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all"
+                                className="px-6 py-3 rounded-2xl bg-white text-black font-black shadow-xl hover:bg-neutral-200 transition-all"
                             >
                                 {isTextOnly ? 'Ask AI' : 'View Insights'}
                             </button>

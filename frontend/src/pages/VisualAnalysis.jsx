@@ -91,7 +91,7 @@ const VisualAnalysis = () => {
                         </div>
                         <button
                             onClick={() => navigate('/intelligence')}
-                            className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-white text-black font-bold transition-all shadow-xl hover:bg-neutral-200"
                         >
                             <Brain size={18} />
                             Go to Intelligence Hub
@@ -101,7 +101,7 @@ const VisualAnalysis = () => {
                     <div className="space-y-8">
                         {/* Search / NLP Input */}
                         <form onSubmit={handleQuerySubmit} className="relative group">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-white/10 to-white/5 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000"></div>
                             <div className="relative">
                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground">
                                     <Brain size={24} className="animate-pulse" />
@@ -117,7 +117,7 @@ const VisualAnalysis = () => {
                                 <button
                                     type="submit"
                                     disabled={queryLoading || !query.trim()}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-3 bg-white text-black font-bold rounded-2xl shadow-xl hover:bg-neutral-200 transition-all flex items-center gap-2 disabled:opacity-20"
                                 >
                                     {queryLoading ? 'Thinking...' : 'Analyze'}
                                 </button>
@@ -201,7 +201,7 @@ const VisualAnalysis = () => {
                         </p>
                     </div>
                     <button
-                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20"
+                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-white text-black font-bold transition-all shadow-xl hover:bg-neutral-200"
                         onClick={() => navigate('/upload')}
                     >
                         Go to Ingestion Zone

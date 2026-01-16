@@ -38,7 +38,7 @@ const RawData = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                    <div className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-[0.2em] shadow-inner">
                         Schema Validated
                     </div>
                 </div>
@@ -81,7 +81,7 @@ const RawData = () => {
                     </div>
                     <button
                         onClick={() => navigate('/upload')}
-                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white font-bold transition-all shadow-lg shadow-primary/20 hover:bg-primary/90"
+                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-white text-black font-extrabold transition-all shadow-xl hover:bg-neutral-200"
                     >
                         Go to Ingestion Zone
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

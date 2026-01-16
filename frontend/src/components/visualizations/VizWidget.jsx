@@ -34,7 +34,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
     }, [config]);
 
     return (
-        <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] transition-all duration-500">
+        <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all duration-500">
             {/* Widget Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
@@ -59,8 +59,8 @@ const VizWidget = ({ config, title, description, loading, error }) => {
             <div className="flex-1 relative min-h-[300px] w-full overflow-hidden">
                 {loading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                        <p className="text-muted-foreground animate-pulse font-medium">Hydrating dataset...</p>
+                        <div className="w-12 h-12 border-4 border-white/5 border-t-white rounded-full animate-spin" />
+                        <p className="text-white/40 animate-pulse font-black uppercase text-[10px] tracking-widest">Hydrating dataset...</p>
                     </div>
                 ) : error ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-4">
@@ -95,7 +95,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
             {/* Footer Info */}
             <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
                     <span>Real-time Sync</span>
                 </div>
                 <span>Powered by Plotly engine</span>

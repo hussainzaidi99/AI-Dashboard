@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     TrendingUp,
     Users,
@@ -56,11 +56,14 @@ const Overview = () => {
         cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
     });
 
+    // State for lazy loading insights
+    const [shouldLoadInsights, setShouldLoadInsights] = useState(false);
+
     // Fetch Insights with caching
     const { data: insights, isLoading: insightsLoading } = useQuery({
         queryKey: ['insights', activeFileId, activeSheetIndex],
         queryFn: () => aiApi.getInsights(activeFileId, activeSheetIndex),
-        enabled: hasActiveDataset,
+        enabled: hasActiveDataset && shouldLoadInsights,
         staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
         cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
         retry: 1, // Only retry once on failure
@@ -188,6 +191,25 @@ const Overview = () => {
                                     <div className="h-12 w-full bg-white/5 rounded-xl" />
                                 </div>
                             ))
+                        ) : !shouldLoadInsights ? (
+                            <div className="flex flex-col items-center justify-center h-full py-10 text-center space-y-6">
+                                <div className="w-16 h-16 rounded-3xl bg-amber-400/10 flex items-center justify-center text-amber-400">
+                                    <Sparkles size={32} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-lg mb-2">Automated Discovery</h4>
+                                    <p className="text-sm text-muted-foreground px-4">
+                                        Run our AI discovery engine to identify hidden trends and anomalies in this dataset.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShouldLoadInsights(true)}
+                                    className="w-full py-4 bg-white text-black font-bold rounded-2xl shadow-xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 mt-4"
+                                >
+                                    <Sparkles size={18} />
+                                    Generate AI Insights
+                                </button>
+                            </div>
                         ) : insightsLoading ? (
                             <div className="flex flex-col items-center justify-center h-48 space-y-4">
                                 <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
