@@ -1,0 +1,49 @@
+name: Build, Push Docker Image to ECR and Deploy to App Runner
+ 
+on:
+  push:
+    branches:
+      - main
+ 
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+ 
+      # 2️⃣ Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+ 
+      # 3️⃣ Login to Amazon ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+ 
+      # 4️⃣ Build Docker image (from backend directory)
+      - name: Build Docker image
+        run: |
+          cd backend
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+ 
+      # 5️⃣ Tag Docker image
+      - name: Tag Docker image
+        run: |
+          cd backend
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION=${{ secrets.AWS_REGION }}
+          IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+          docker tag ${{ secrets.ECR_REPOSITORY }}:latest $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+ 
+      # 6️⃣ Push Docker image to ECR
+      - name: Push Docker image
+        run: |
+          cd backend
+          docker push $IMAGE_URI

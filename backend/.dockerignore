@@ -1,0 +1,36 @@
+# Byte-compiled / cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+ 
+# Virtual environment
+venv/
+.env
+.env.*
+ 
+# OS files
+.DS_Store
+Thumbs.db
+ 
+# Logs
+*.Logs
+*.uploads
+*.exports
+
+ 
+# Git
+.git
+.gitignore
+ 
+ 
+ 
+# Node modules if you have frontend in the same repo
+node_modules/
+ 
+# Pytest cache
+.pytest_cache/
+ 
+# Other unwanted folders
+__pycache__/
+ 

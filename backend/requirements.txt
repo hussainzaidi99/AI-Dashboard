@@ -1,6 +1,6 @@
-# AI Data Visualization Dashboard - Frozen Backend Requirements
+# AI Data Visualization Dashboard - Production-Compatible Requirements
 # Last Updated: 2026-01-17
-# Environment: Production
+# Environment: Production (Fully Reconciled)
 
 # Core Framework
 fastapi==0.109.0
@@ -15,12 +15,13 @@ beanie==1.25.0
 motor==3.3.2
 pymongo==4.6.1
 
-# AI / LLM
+# AI / LLM (Reconciled to 0.3.x Core Ecosystem)
 langchain==0.3.27
-langchain-core==1.2.7
+langchain-core==0.3.78
 langchain-community==0.3.31
 langchain-groq==0.2.5
-langchain-google-genai==4.2.0
+# Downgraded to align with core < 1.0.0
+langchain-google-genai==2.0.1
 langsmith==0.6.0
 groq==0.37.1
 google-genai==1.59.0
