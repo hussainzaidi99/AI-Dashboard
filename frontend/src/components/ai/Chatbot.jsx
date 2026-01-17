@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, X, RotateCcw, ChevronDown, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { useDataset } from '../../context/DatasetContext';
 import { useLocation } from 'react-router-dom';
 import { aiApi } from '../../api/ai';
@@ -212,7 +213,13 @@ const Chatbot = () => {
                                                 ? 'bg-white/10 border border-white/20 text-white rounded-tr-none'
                                                 : 'bg-white/5 border border-white/10 text-white/90 rounded-tl-none font-medium'
                                                 } ${msg.isStreaming ? 'animate-pulse border-white/20' : ''}`}>
-                                                {msg.text || (msg.isStreaming ? '...' : '')}
+                                                {msg.type === 'user' ? (
+                                                    msg.text
+                                                ) : (
+                                                    <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:mb-2 prose-headings:mt-4 first:prose-headings:mt-0">
+                                                        <ReactMarkdown>{msg.text || (msg.isStreaming ? '...' : '')}</ReactMarkdown>
+                                                    </div>
+                                                )}
                                             </div>
                                             <p className={`text-[10px] text-muted-foreground ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
                                                 {msg.time}

@@ -344,17 +344,23 @@ Your goal is to provide extreme value with minimal words.
 Tone: Professional, authoritative, and concise.
 Rules:
 - NO introductory boilerplate (e.g., "Here is the summary...")
-- NO redundant explanations of what the data/information is (unless asked)
-- Use brief bullet points for takeaways
+- Use ### for Section Headings
+- Use bullet points for takeaways
 - Focus on quality, density, and impact
-- Max length: 150 words."""
+- Max length: 150 words.
+- All output MUST be valid Markdown."""
         
         prompt = f"""{data_summary}
 
 Synthesize these findings into a "Document Discovery" overview:
-1. One-sentence high-level verdict.
-2. 3-4 ultra-concise takeaways (impact-focused).
-3. One critical next step.
+### High-Level Verdict
+(One-sentence high-level verdict)
+
+### Key Takeaways
+(3-4 ultra-concise takeaways, impact-focused)
+
+### Recommended Action
+(One critical next step)
 
 Keep it tight. Quality > Quantity."""
         

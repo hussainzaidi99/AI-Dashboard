@@ -237,7 +237,7 @@ async def delete_file(file_id: str):
                     r.delete(key)
                 logger.info(f"Cleared {len(chatbot_keys)} chatbot cache entries")
             
-            logger.info(f"✅ All cache cleared for file: {file_id}")
+            logger.info(f"All cache cleared for file: {file_id}")
             
         except Exception as cache_error:
             logger.warning(f"Error clearing cache (non-critical): {str(cache_error)}")

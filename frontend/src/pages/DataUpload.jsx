@@ -125,10 +125,13 @@ const DataUpload = () => {
                         </div>
                     ) : (
                         recentFiles.slice(0, 5).map((file) => (
-                            <button
+                            <div
                                 key={file.file_id}
                                 onClick={() => selectFile(file)}
-                                className={`flex items-center justify-between p-6 glass-card rounded-2xl border transition-all text-left group ${activeFileId === file.file_id
+                                onKeyDown={(e) => e.key === 'Enter' && selectFile(file)}
+                                role="button"
+                                tabIndex={0}
+                                className={`flex items-center justify-between p-6 glass-card rounded-2xl border transition-all text-left group cursor-pointer ${activeFileId === file.file_id
                                     ? 'border-white bg-white/5 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
                                     : 'border-white/5 hover:border-white/10 hover:bg-white/5'
                                     }`}
@@ -169,7 +172,7 @@ const DataUpload = () => {
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
-                            </button>
+                            </div>
                         ))
                     )}
                 </div>

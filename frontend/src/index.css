@@ -62,6 +62,40 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
 }
 
+/* Markdown Styling */
+.markdown-summary h3 {
+  @apply text-lg font-black mt-6 mb-3 text-white;
+}
+
+.markdown-summary p {
+  @apply mb-4 last:mb-0;
+}
+
+.markdown-summary ul {
+  @apply list-disc list-outside ml-4 space-y-2 mb-4;
+}
+
+.markdown-summary li {
+  @apply pl-1;
+}
+
+/* Chatbot Specific Markdown */
+.prose h4 {
+  @apply text-[13px] font-black uppercase tracking-wider mt-4 mb-2 text-white/90;
+}
+
+.prose ul {
+  @apply list-disc list-outside ml-4 space-y-1 my-3;
+}
+
+.prose li {
+  @apply text-sm pl-1;
+}
+
+.prose p {
+  @apply mb-3 last:mb-0;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

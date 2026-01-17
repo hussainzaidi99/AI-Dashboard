@@ -11,6 +11,7 @@ import {
     Calendar,
     Sparkles
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useQuery } from '@tanstack/react-query';
 import { useDataset } from '../context/DatasetContext';
 import { aiApi } from '../api/ai';
@@ -161,12 +162,22 @@ const AIIntelligence = () => {
                             ) : (
                                 <div className="space-y-6 flex-1">
                                     <div className="prose prose-invert max-w-none">
-                                        <p className="text-lg text-zinc-300 leading-relaxed font-medium">
-                                            {data?.summary || (isTextOnly
-                                                ? "Document synthesis complete. Our AI has parsed the text content to identify core themes, key entities, and significant insights."
-                                                : "Global analysis complete. Our neural engines have parsed the dataset to identify core structural patterns and optimization opportunities.")
-                                            }
-                                        </p>
+                                        <div className="text-zinc-300 leading-relaxed font-medium">
+                                            {data?.summary ? (
+                                                <div className="markdown-summary">
+                                                    <ReactMarkdown>
+                                                        {data.summary}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            ) : (
+                                                <p>
+                                                    {isTextOnly
+                                                        ? "Document synthesis complete. Our AI has parsed the text content to identify core themes, key entities, and significant insights."
+                                                        : "Global analysis complete. Our neural engines have parsed the dataset to identify core structural patterns and optimization opportunities."
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {data?.insights?.length > 3 && (
