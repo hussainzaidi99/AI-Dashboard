@@ -1,55 +1,66 @@
+# AI Data Visualization Dashboard - Frozen Backend Requirements
+# Last Updated: 2026-01-17
+# Environment: Production
+
 # Core Framework
-fastapi>=0.109.1
-uvicorn[standard]>=0.27.1
-python-multipart>=0.0.6
-python-dotenv>=1.0.1
-pydantic>=2.4.2
-pydantic-settings>=2.1.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.6
+python-dotenv==1.2.1
+pydantic==2.12.5
+pydantic-settings==2.12.0
 
 # Database (MongoDB)
-beanie>=1.25.0
-motor>=3.3.2
+beanie==1.25.0
+motor==3.3.2
+pymongo==4.6.1
 
-# AI/LLM
-langchain==0.2.14
-langchain-core==0.2.33
-langchain-community==0.2.12
-langchain-groq==0.1.9
-langchain-google-genai==1.0.10
-langsmith>=0.1.0
-groq>=0.4.0
+# AI / LLM
+langchain==0.3.27
+langchain-core==1.2.7
+langchain-community==0.3.31
+langchain-groq==0.2.5
+langchain-google-genai==4.2.0
+langsmith==0.6.0
+groq==0.37.1
+google-genai==1.59.0
 
 # Data Processing
-pandas>=2.1.0
-numpy>=1.26.0
-scipy>=1.12.0
+pandas==2.1.4
+numpy==1.26.4
+scipy==1.16.3
 
 # Document Processing
-PyPDF2>=3.0.0
-pdfplumber>=0.10.0
-tabula-py>=2.9.0
-camelot-py>=0.11.0
-python-docx>=1.1.0
-openpyxl>=3.1.0
-xlrd>=2.0.1
-pytesseract>=0.3.10
-Pillow>=10.0.0
-python-magic>=0.4.27
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+python-docx==1.1.0
+openpyxl==3.1.2
+xlrd==2.0.1
+pytesseract==0.3.10
+Pillow==10.2.0
+python-magic==0.4.27
 
 # Visualization
-plotly>=5.18.0
-kaleido>=0.2.1
+plotly==5.18.0
+kaleido==0.2.1
 
 # Cache & Tasks
-redis>=5.0.0
-celery>=5.3.0
+redis==5.0.1
+celery==5.6.2
+
+# Security & Authentication
+python-jose==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
 
 # Utilities
-aiofiles>=23.2.1
-chardet>=5.2.0
-email-validator>=2.1.0
-jinja2>=3.1.0
-requests>=2.31.0
-httpx>=0.26.0
-watchfiles>=0.21.0
-google-auth>=2.27.0
+aiofiles==23.2.1
+chardet==5.2.0
+email-validator==2.3.0
+jinja2==3.1.6
+requests==2.32.5
+httpx==0.28.1
+watchfiles==1.1.1
+google-auth==2.47.0
+tenacity==9.1.2
+PyYAML==6.0.3

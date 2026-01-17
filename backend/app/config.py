@@ -50,7 +50,6 @@ class Settings:
     # ==================== Database ====================
     MONGODB_URL: str = os.getenv("MONGODB_URL", "")
     MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "ai_dashboard")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./ai_dashboard.db")  # Kept for compatibility
     
     # ==================== Redis ====================
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
