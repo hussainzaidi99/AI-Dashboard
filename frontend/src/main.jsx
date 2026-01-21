@@ -19,9 +19,29 @@ import { AuthProvider } from './context/AuthContext';
 
 import { BrowserRouter } from 'react-router-dom';
 
+// Get Google Client ID with fallback and logging
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// Only log warning if Client ID is missing (helps debug production issues)
+if (!googleClientId) {
+  console.warn('⚠️ VITE_GOOGLE_CLIENT_ID is not configured. Google OAuth will be disabled.');
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    {googleClientId ? (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AuthProvider>
+              <DatasetProvider>
+                <App />
+              </DatasetProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </GoogleOAuthProvider>
+    ) : (
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
@@ -31,6 +51,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
-    </GoogleOAuthProvider>
+    )}
   </React.StrictMode>,
 )
