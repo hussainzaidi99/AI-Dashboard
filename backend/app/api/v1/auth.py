@@ -66,7 +66,14 @@ async def google_login(data: GoogleLoginRequest) -> Any:
     Authenticate with Google ID token.
     Verify the token, get user info, and return an access token.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info("Received Google login request")
+        logger.info(f"Token (first 50 chars): {data.token[:50] if len(data.token) > 50 else data.token}...")
+        logger.info(f"GOOGLE_CLIENT_ID configured: {settings.GOOGLE_CLIENT_ID[:20] if settings.GOOGLE_CLIENT_ID else 'NOT SET'}...")
+        
         # Verify Google Token
         idinfo = id_token.verify_oauth2_token(
             data.token, 
@@ -74,6 +81,8 @@ async def google_login(data: GoogleLoginRequest) -> Any:
             settings.GOOGLE_CLIENT_ID
         )
 
+        logger.info(f"Token verified successfully for email: {idinfo.get('email')}")
+        
         # ID token is valid. Get user's Google ID and email.
         email = idinfo['email']
         full_name = idinfo.get('name', '')
@@ -82,6 +91,7 @@ async def google_login(data: GoogleLoginRequest) -> Any:
         user = await User.find_one(User.email == email)
         
         if not user:
+            logger.info(f"Creating new user for Google login: {email}")
             # Create new user for Google login
             # We use a random password since they use Google to log in
             user = User(
@@ -92,11 +102,13 @@ async def google_login(data: GoogleLoginRequest) -> Any:
             )
             await user.insert()
         elif not user.is_active:
+            logger.warning(f"Inactive user attempted login: {email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Inactive user"
             )
 
+        logger.info(f"Google authentication successful for: {email}")
         return {
             "access_token": create_access_token(user.user_id),
             "token_type": "bearer",
@@ -109,12 +121,15 @@ async def google_login(data: GoogleLoginRequest) -> Any:
         
     except ValueError as e:
         # Invalid token
+        logger.error(f"Google token verification failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid Google token: {str(e)}"
         )
     except Exception as e:
+        logger.error(f"Unexpected error during Google auth: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Authentication error: {str(e)}"
         )
+

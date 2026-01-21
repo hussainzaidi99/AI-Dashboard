@@ -132,7 +132,6 @@ const Login = ({ onToggle }) => {
                         theme="filled_black"
                         shape="pill"
                         size="large"
-                        width="100%"
                         text="signin_with"
                     />
                 </div>
