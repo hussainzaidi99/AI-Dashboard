@@ -95,14 +95,23 @@ class LLMClient:
         self,
         prompt: str,
         system_message: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> str:
-        """Generate response from LLM with rate limit handling"""
+        """Generate response from LLM with rate limit handling and history support"""
         try:
             messages = []
             
             if system_message:
                 messages.append(("system", system_message))
+            
+            if history:
+                for msg in history:
+                    role = msg.get("role", "human")
+                    content = msg.get("content", "")
+                    if role == "user": role = "human"
+                    if role == "assistant": role = "ai"
+                    messages.append((role, content))
             
             messages.append(("human", prompt))
             
@@ -137,14 +146,23 @@ class LLMClient:
         self,
         prompt: str,
         system_message: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ):
-        """Stream response from LLM token by token"""
+        """Stream response from LLM token by token with history support"""
         try:
             messages = []
             
             if system_message:
                 messages.append(("system", system_message))
+            
+            if history:
+                for msg in history:
+                    role = msg.get("role", "human")
+                    content = msg.get("content", "")
+                    if role == "user": role = "human"
+                    if role == "assistant": role = "ai"
+                    messages.append((role, content))
             
             messages.append(("human", prompt))
             

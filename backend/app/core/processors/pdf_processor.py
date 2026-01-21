@@ -1,7 +1,3 @@
-"""
-PDF Processor - Extract text and tables from PDF files
-Uses pdfplumber (primary) and tabula-py (fallback) for table extraction
-"""
 #backend/app/core/processors/pdf_processor.py
 
 import time
@@ -75,12 +71,22 @@ class PDFProcessor(BaseProcessor):
                 
                 # Clean and add tables
                 for table_data in tables:
-                    table_df = table_data['df']
-                    page_num = table_data['page']
-                    if not table_df.empty:
-                        cleaned_df = self.clean_dataframe(table_df)
-                        dataframes.append(cleaned_df)
-                        metadata[f'table_{len(dataframes)}_location'] = f"Page {page_num}"
+                    try:
+                        # Handle both dictionary (pdfplumber/updated tabula) and raw DataFrame (old tabula)
+                        if isinstance(table_data, dict):
+                            table_df = table_data.get('df')
+                            page_num = table_data.get('page', 'Unknown')
+                        else:
+                            table_df = table_data
+                            page_num = 'Unknown'
+
+                        if table_df is not None and not table_df.empty:
+                            cleaned_df = self.clean_dataframe(table_df)
+                            dataframes.append(cleaned_df)
+                            metadata[f'table_{len(dataframes)}_location'] = f"Page {page_num}"
+                    except Exception as table_err:
+                        self.logger.warning(f"Error cleaning table: {str(table_err)}")
+                        continue
             
             # Check if we hit page limit
             if specific_pages is None:
@@ -221,21 +227,41 @@ class PDFProcessor(BaseProcessor):
         try:
             import tabula
             
+            # Get actual page count to avoid "Page number does not exist" error
+            total_pages = 0
+            try:
+                import PyPDF2
+                with open(file_path, 'rb') as f:
+                    pdf_reader = PyPDF2.PdfReader(f)
+                    total_pages = len(pdf_reader.pages)
+            except Exception as e:
+                self.logger.warning(f"Could not get page count for tabula: {e}")
+            
             # Convert page numbers to tabula format (1-indexed, comma-separated)
             if pages:
                 pages_str = ','.join(str(p + 1) for p in pages)
             else:
-                pages_str = f'1-{self.max_pages}'
+                effective_max = min(total_pages, self.max_pages) if total_pages > 0 else self.max_pages
+                pages_str = f'1-{effective_max}'
             
             # Extract tables
-            dataframes = tabula.read_pdf(
+            raw_dfs = tabula.read_pdf(
                 file_path,
                 pages=pages_str,
                 multiple_tables=True,
                 silent=True
             )
             
-            return dataframes if dataframes else []
+            # Format to match pdfplumber's return (list of dicts)
+            formatted_tables = []
+            if raw_dfs:
+                for df in raw_dfs:
+                    formatted_tables.append({
+                        'df': df,
+                        'page': 'Multiple/Unknown' # Tabula doesn't easily map back to single pages in bulk
+                    })
+            
+            return formatted_tables
         
         except Exception as e:
             msg = str(e)

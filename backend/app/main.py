@@ -14,8 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import typing
 
 # Monkeypatch for ForwardRef in Python 3.12 (uncomment if legacy pydantic/langchain issues occur)
-# Monkeypatch for ForwardRef in Python 3.12 (uncomment if legacy pydantic/langchain issues occur)
-# Monkeypatch for ForwardRef in Python 3.12 (uncomment if legacy pydantic/langchain issues occur)
 if sys.version_info >= (3, 12):
     orig_evaluate = typing.ForwardRef._evaluate
     def patched_evaluate(self, globalns, localns, type_params=None, recursive_guard=frozenset()):
