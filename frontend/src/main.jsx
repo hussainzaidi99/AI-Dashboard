@@ -19,16 +19,9 @@ import { AuthProvider } from './context/AuthContext';
 
 import { BrowserRouter } from 'react-router-dom';
 
-// Safety check for Google Client ID
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-if (!googleClientId) {
-  console.error('❌ VITE_GOOGLE_CLIENT_ID is not set! Google OAuth will not work.');
-  console.error('Please add VITE_GOOGLE_CLIENT_ID to your environment variables in AWS Amplify.');
-}
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={googleClientId || 'dummy-client-id'}>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
