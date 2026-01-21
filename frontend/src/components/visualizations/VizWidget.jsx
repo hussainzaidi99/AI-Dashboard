@@ -29,9 +29,23 @@ const VizWidget = ({ config, title, description, loading, error }) => {
 
     // Memoize data to prevent unnecessary re-renders
     const plotlyData = useMemo(() => {
-        if (!config || !config.data) return [];
-        return config.data;
+        if (!config || !config.data || !Array.isArray(config.data)) {
+            console.warn('VizWidget: Invalid or missing config.data', config);
+            return [];
+        }
+
+        // Filter out any undefined or null data items
+        const validData = config.data.filter(item => item != null && typeof item === 'object');
+
+        if (validData.length === 0) {
+            console.warn('VizWidget: No valid data items found in config.data');
+        }
+
+        return validData;
     }, [config]);
+
+    // Don't render Plotly if there's no valid data
+    const hasValidData = plotlyData.length > 0;
 
     return (
         <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all duration-500">
@@ -72,7 +86,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                             Retry Sync
                         </button>
                     </div>
-                ) : config ? (
+                ) : config && hasValidData ? (
                     <div className="w-full h-full animate-in fade-in zoom-in-95 duration-700">
                         <Plot
                             data={plotlyData}
@@ -87,7 +101,9 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                     </div>
                 ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-                        <p className="text-muted-foreground/40 font-medium">No configuration data available.</p>
+                        <p className="text-muted-foreground/40 font-medium">
+                            {config ? 'No valid chart data available.' : 'No configuration data available.'}
+                        </p>
                     </div>
                 )}
             </div>
