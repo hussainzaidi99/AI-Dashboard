@@ -1,8 +1,18 @@
-import React, { useMemo } from 'react';
-import Plot from 'react-plotly.js';
-import { Maximize2, Download, MoreHorizontal, Info } from 'lucide-react';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { Maximize2, Download, Info } from 'lucide-react';
+
+// Load Plotly dynamically to avoid bundling issues
+let Plotly = null;
+if (typeof window !== 'undefined') {
+    import('plotly.js-dist-min').then(module => {
+        Plotly = module.default;
+    });
+}
 
 const VizWidget = ({ config, title, description, loading, error }) => {
+    const plotRef = useRef(null);
+    const plotInitialized = useRef(false);
+
     // Memoize Plotly layout to maintain performance
     const plotlyLayout = useMemo(() => {
         if (!config || !config.layout) return {};
@@ -30,22 +40,76 @@ const VizWidget = ({ config, title, description, loading, error }) => {
     // Memoize data to prevent unnecessary re-renders
     const plotlyData = useMemo(() => {
         if (!config || !config.data || !Array.isArray(config.data)) {
-            console.warn('VizWidget: Invalid or missing config.data', config);
             return [];
         }
 
         // Filter out any undefined or null data items
         const validData = config.data.filter(item => item != null && typeof item === 'object');
-
-        if (validData.length === 0) {
-            console.warn('VizWidget: No valid data items found in config.data');
-        }
-
         return validData;
     }, [config]);
 
     // Don't render Plotly if there's no valid data
     const hasValidData = plotlyData.length > 0;
+
+    // Use native Plotly.js API instead of react-plotly.js
+    useEffect(() => {
+        if (!plotRef.current || !Plotly || !hasValidData || loading || error) {
+            return;
+        }
+
+        const renderPlot = async () => {
+            try {
+                if (!plotInitialized.current) {
+                    // Initial plot creation
+                    await Plotly.newPlot(
+                        plotRef.current,
+                        plotlyData,
+                        plotlyLayout,
+                        {
+                            displayModeBar: false,
+                            responsive: true,
+                        }
+                    );
+                    plotInitialized.current = true;
+                } else {
+                    // Update existing plot
+                    await Plotly.react(
+                        plotRef.current,
+                        plotlyData,
+                        plotlyLayout
+                    );
+                }
+            } catch (err) {
+                console.error('Plotly rendering error:', err);
+            }
+        };
+
+        renderPlot();
+
+        // Cleanup on unmount
+        return () => {
+            if (plotRef.current && Plotly) {
+                Plotly.purge(plotRef.current);
+                plotInitialized.current = false;
+            }
+        };
+    }, [plotlyData, plotlyLayout, hasValidData, loading, error]);
+
+    // Handle window resize
+    useEffect(() => {
+        if (!plotRef.current || !Plotly || !plotInitialized.current) {
+            return;
+        }
+
+        const handleResize = () => {
+            if (plotRef.current && Plotly) {
+                Plotly.Plots.resize(plotRef.current);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all duration-500">
@@ -87,18 +151,11 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                         </button>
                     </div>
                 ) : config && hasValidData ? (
-                    <div className="w-full h-full animate-in fade-in zoom-in-95 duration-700">
-                        <Plot
-                            data={plotlyData}
-                            layout={plotlyLayout}
-                            useResizeHandler={true}
-                            className="w-full h-full"
-                            config={{
-                                displayModeBar: false,
-                                responsive: true,
-                            }}
-                        />
-                    </div>
+                    <div
+                        ref={plotRef}
+                        className="w-full h-full animate-in fade-in zoom-in-95 duration-700"
+                        style={{ minHeight: '300px' }}
+                    />
                 ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
                         <p className="text-muted-foreground/40 font-medium">
