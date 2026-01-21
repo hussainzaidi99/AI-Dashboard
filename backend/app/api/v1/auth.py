@@ -127,19 +127,9 @@ async def google_login(data: GoogleLoginRequest) -> Any:
             detail=f"Invalid Google token: {str(e)}"
         )
     except Exception as e:
-        # Check if it's a database connection error
-        import motor.core
-        import pymongo.errors
-        
-        error_type = type(e).__name__
-        logger.error(f"Unexpected error during Google auth [{error_type}]: {str(e)}", exc_info=True)
-        
-        detail_msg = f"Authentication error: {str(e)}"
-        if "timeout" in str(e).lower() or "connection" in str(e).lower():
-            detail_msg = "Database connection error. Please check backend connectivity to MongoDB."
-            
+        logger.error(f"Unexpected error during Google auth: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail_msg
+            detail=f"Authentication error: {str(e)}"
         )
 
