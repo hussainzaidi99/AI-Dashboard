@@ -195,42 +195,65 @@ Available Data:
 - Sample Values: {df.head(2).to_dict('records')}{context_info}
 """
         
-        system_message = """You are a data visualization expert.
-Parse the user's natural language query into a structured format for creating visualizations.
+        system_message = """You are an expert data visualization analyst specializing in understanding user intent and translating natural language queries into structured visualization specifications.
 
-Identify:
-1. Intent (what they want to do)
-2. Chart type (if specified or implied)
-3. Columns to use
-4. Any filters or conditions
-5. Aggregations needed
-6. Grouping/sorting requirements"""
+Your task is to:
+1. Extract the user's visualization intent (what they want to see)
+2. Identify the chart type (explicit or inferred from query)
+3. Extract all data columns mentioned or implied
+4. Determine grouping, aggregation, and filtering requirements
+
+CRITICAL INSTRUCTIONS:
+- For chart type detection: Look for keywords like "bar", "line", "scatter", "pie", "histogram", "heatmap", "box"
+- For aggregation detection: Look for "by" or "per" keywords to identify grouping columns
+- For column extraction: Match mentioned column names EXACTLY as they appear in the dataset
+- If query says "show me X by Y", then X and Y are the columns, Y is the groupby
+- If query says "X as a bar chart", then "bar" is the chart type
+- Always infer aggregations for numeric columns when grouping is specified
+- Be very strict about matching column names - use only columns that exist in the dataset
+- For "by" keyword queries like "age and purchase_value by user_id", extract:
+  - columns: all mentioned columns
+  - groupby: the column after "by"
+  - aggregations: numeric columns should use appropriate aggregations (sum/mean/count)"""
         
         prompt = f"""{data_context}
 
 User Query: "{query}"
 
-Parse this query into JSON format:
+Analyze this query and extract:
+1. What data columns the user wants to see (extract column names that match exactly with dataset)
+2. How they want to group or aggregate the data (detect "by" keyword)
+3. What type of chart would best represent this (bar, line, scatter, pie, histogram, box, heatmap)
+4. Any filters, sorting, or limits mentioned
+
+Return ONLY valid JSON (no markdown, no extra text):
 {{
-    "intent": "visualize|analyze|compare|correlate|trend|distribution",
+    "intent": "visualize",
     "chart_type": "bar|line|scatter|pie|histogram|box|heatmap|null",
     "columns": ["column1", "column2"],
-    "filters": {{"column_name": "condition"}},
+    "filters": {{}},
     "aggregations": {{"column_name": "sum|mean|count|max|min"}},
     "groupby": "column_name or null",
     "sort_by": "column_name or null",
-    "limit": number or null,
+    "limit": null,
     "confidence": 0.0-1.0
 }}
 
-Examples:
+PARSING EXAMPLES:
+Query: "show me 'age' and 'purchase_value' by 'user_id' as a bar chart"
+Response: {{"intent": "visualize", "chart_type": "bar", "columns": ["age", "purchase_value", "user_id"], "aggregations": {{"age": "sum", "purchase_value": "sum"}}, "groupby": "user_id", "confidence": 0.95}}
+
 Query: "Show me sales by region"
 Response: {{"intent": "visualize", "chart_type": "bar", "columns": ["region", "sales"], "aggregations": {{"sales": "sum"}}, "groupby": "region", "confidence": 0.9}}
 
-Query: "Plot revenue over time"
-Response: {{"intent": "trend", "chart_type": "line", "columns": ["time", "revenue"], "confidence": 0.95}}
+Query: "Plot revenue trend over time as a line chart"
+Response: {{"intent": "trend", "chart_type": "line", "columns": ["time", "revenue"], "aggregations": {{}}, "groupby": null, "confidence": 0.95}}
 
-Now parse the user's query above."""
+Query: "Compare product sales as a pie chart"
+Response: {{"intent": "compare", "chart_type": "pie", "columns": ["product", "sales"], "aggregations": {{"sales": "sum"}}, "groupby": "product", "confidence": 0.88}}
+
+Now carefully parse this user query: "{query}"
+Return ONLY the JSON response, nothing else."""
         
         try:
             response = await self.llm.generate_structured(
@@ -319,23 +342,53 @@ Now parse the user's query above."""
         return QueryIntent.VISUALIZE  # Default
     
     def _detect_chart_type(self, query: str) -> Optional[str]:
-        """Detect chart type from keywords"""
-        for chart_type, keywords in self.chart_keywords.items():
-            if any(keyword in query for keyword in keywords):
-                return chart_type
+        query_lower = query.lower()
+        
+        chart_patterns = {
+            "bar": ["bar chart", "bar graph", "bars", " bar ", "barplot"],
+            "line": ["line chart", "line graph", "line plot", "trend"],
+            "scatter": ["scatter plot", "scatter chart", "scatterplot"],
+            "pie": ["pie chart", "pie graph", "donut"],
+            "histogram": ["histogram", "distribution", "hist"],
+            "box": ["box plot", "boxplot", "box-and-whisker"],
+            "heatmap": ["heatmap", "heat map", "correlation matrix"],
+        }
+        
+        for chart_type, keywords in chart_patterns.items():
+            for keyword in keywords:
+                if keyword in query_lower:
+                    return chart_type
+        
         return None
     
     def _extract_columns(self, query: str, df: pd.DataFrame) -> List[str]:
-        """Extract column names mentioned in query"""
+        """Extract column names mentioned in query - improved extraction"""
         found_columns = []
+        query_lower = query.lower()
         
+        # First, look for quoted column names like 'age' or "purchase_value"
+        import re
+        quoted_pattern = r"['\"]([^'\"]+)['\"]"
+        quoted_matches = re.findall(quoted_pattern, query)
+        
+        # Check quoted matches against actual columns
+        for match in quoted_matches:
+            for col in df.columns:
+                if match.lower() == col.lower() or match.lower() == col.lower().replace('_', ' ').replace('-', ' '):
+                    if col not in found_columns:
+                        found_columns.append(col)
+        
+        # Then check for unquoted exact matches
         for col in df.columns:
-            # Check exact match (case-insensitive)
-            if col.lower() in query:
-                found_columns.append(col)
-            # Check partial match
-            elif any(word in query for word in col.lower().split('_')):
-                found_columns.append(col)
+            col_lower = col.lower()
+            # Exact match
+            if col_lower in query_lower:
+                if col not in found_columns:
+                    found_columns.append(col)
+            # Match with word boundaries
+            elif re.search(r'\b' + re.escape(col_lower.replace('_', ' ')) + r'\b', query_lower):
+                if col not in found_columns:
+                    found_columns.append(col)
         
         return found_columns
     
@@ -344,40 +397,68 @@ Now parse the user's query above."""
         query: str,
         columns: List[str]
     ) -> Dict[str, str]:
-        """Detect aggregation functions"""
+        """Detect aggregation functions - improved with better type detection"""
         aggregations = {}
         
         agg_keywords = {
-            "sum": ["sum", "total"],
+            "sum": ["sum", "total", "add up"],
             "mean": ["average", "mean", "avg"],
-            "count": ["count", "number of"],
-            "max": ["maximum", "max", "highest"],
-            "min": ["minimum", "min", "lowest"]
+            "count": ["count", "number of", "how many"],
+            "max": ["maximum", "max", "highest", "largest"],
+            "min": ["minimum", "min", "lowest", "smallest"]
         }
         
+        # Check for explicit aggregation keywords
+        detected_agg = None
         for agg_func, keywords in agg_keywords.items():
-            if any(keyword in query for keyword in keywords):
-                # Apply to numeric columns
-                for col in columns:
-                    aggregations[col] = agg_func
+            if any(keyword in query.lower() for keyword in keywords):
+                detected_agg = agg_func
                 break
+        
+        # If no explicit aggregation but columns present, apply reasonable defaults
+        # Numeric columns typically get sum/count, non-numeric get count
+        if columns:
+            for col in columns:
+                if detected_agg:
+                    aggregations[col] = detected_agg
+
         
         return aggregations
     
     def _detect_groupby(self, query: str, df: pd.DataFrame) -> Optional[str]:
-        """Detect groupby column"""
+        """Detect groupby column - improved to handle quoted names and exact matching"""
+        import re
+        
         groupby_keywords = ["by", "per", "for each", "group by"]
+        query_lower = query.lower()
         
         for keyword in groupby_keywords:
-            if keyword in query:
-                # Find the column after the keyword
-                words = query.split(keyword)
-                if len(words) > 1:
-                    potential_col = words[1].strip().split()[0]
-                    # Check if it matches a column
-                    for col in df.columns:
-                        if col.lower() in potential_col or potential_col in col.lower():
-                            return col
+            if keyword in query_lower:
+                # Split by keyword and get the part after it
+                parts = query_lower.split(keyword)
+                if len(parts) > 1:
+                    after_keyword = parts[-1].strip()  # Get the last occurrence
+                    
+                    # First, check if there's a quoted column name right after
+                    quoted_pattern = r"['\"]([^'\"]+)['\"]"
+                    quoted_matches = re.findall(quoted_pattern, after_keyword)
+                    if quoted_matches:
+                        potential_col = quoted_matches[0].lower()
+                        for col in df.columns:
+                            if potential_col == col.lower():
+                                return col
+                    
+                    # Then check for unquoted column name (first word after keyword)
+                    words = after_keyword.replace(',', ' ').replace('as', ' ').split()
+                    for word in words:
+                        word_clean = word.strip()
+                        if not word_clean:
+                            continue
+                        
+                        # Exact match
+                        for col in df.columns:
+                            if word_clean == col.lower() or word_clean == col.lower().replace('_', ''):
+                                return col
         
         return None
     

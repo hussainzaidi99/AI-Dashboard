@@ -14,6 +14,7 @@ from app.core.analyzers import DataProfiler, StatisticalAnalyzer, QualityChecker
 from app.models.mongodb_models import FileUpload, DataProfile, QualityReport
 from app.utils.cache import cache_manager
 from app.utils.data_persistence import get_processed_data
+from app.utils.response_sanitizer import sanitize_dict, sanitize_value, convert_dataframe_to_dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -144,21 +145,21 @@ async def analyze_statistics(file_id: str, sheet_index: int = 0):
         if result.correlation_analysis:
             correlation = {
                 "method": result.correlation_analysis.method,
-                "matrix": result.correlation_analysis.matrix.to_dict(),
+                "matrix": sanitize_dict(result.correlation_analysis.matrix.to_dict()),
                 "significant_pairs": result.correlation_analysis.significant_pairs
             }
         
-        return {
+        return sanitize_dict({
             "file_id": file_id,
             "sheet_index": sheet_index,
             "distribution_tests": distribution_tests,
             "correlation_analysis": correlation,
             "outlier_analysis": outliers,
             "variance_tests": result.variance_tests,
-            "summary_stats": result.summary_stats.to_dict(),
+            "summary_stats": convert_dataframe_to_dict(result.summary_stats),
             "warnings": result.warnings,
             "is_text_only": False
-        }
+        })
     
     except Exception as e:
         logger.error(f"Error analyzing statistics: {str(e)}")

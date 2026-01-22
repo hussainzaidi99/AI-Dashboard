@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Any
 from app.config import get_upload_path
 from app.utils.cache import cache_manager
+from app.utils.json_encoder import deserialize_from_json
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ async def get_processed_data(file_id: str) -> Optional[Any]:
     if os.path.exists(persistence_path):
         try:
             with open(persistence_path, 'r') as f:
-                data = json.load(f)
+                # Use custom deserializer for proper type handling
+                data = deserialize_from_json(f.read())
             
             # Re-hydrate cache
             cache_manager.set(cache_key, data, expire=86400)

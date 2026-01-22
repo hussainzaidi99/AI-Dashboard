@@ -179,7 +179,9 @@ class BaseProcessor(ABC):
     
     def _infer_data_types(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Infer and convert data types for better analysis
+        Infer and convert data types for better analysis.
+        Note: Timestamps are detected but remain as pd.Timestamp objects for analysis.
+        They will be serialized to ISO 8601 strings by the custom JSON encoder.
         
         Args:
             df: Input DataFrame
@@ -188,6 +190,7 @@ class BaseProcessor(ABC):
             DataFrame with inferred types
         """
         import re
+        import warnings
         
         # Date pattern heuristic (e.g., YYYY-MM-DD, DD/MM/YYYY, etc.)
         date_pattern = re.compile(r'(\d{1,4})[/-]\d{1,2}[/-]\d{1,4}')
@@ -215,7 +218,12 @@ class BaseProcessor(ABC):
                     if len(sample) > 0:
                         # Only attempt if at least one sample matches date pattern
                         if any(date_pattern.search(str(s)) for s in sample):
-                            df[col] = pd.to_datetime(df[col], errors='coerce')
+                            # Suppress the dateutil parsing warning as we're intentionally
+                            # allowing flexible date parsing
+                            with warnings.catch_warnings():
+                                warnings.filterwarnings('ignore', 
+                                                      message='Could not infer format')
+                                df[col] = pd.to_datetime(df[col], errors='coerce')
                 except:
                     pass
         

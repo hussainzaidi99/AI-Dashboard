@@ -14,6 +14,7 @@ from app.core.ai import InsightGenerator, QueryParser
 from app.models.mongodb_models import FileUpload
 from app.utils.cache import cache_manager
 from app.utils.data_persistence import get_processed_data
+from app.utils.response_sanitizer import sanitize_dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ async def generate_insights(request: InsightRequest):
             for insight in insights:
                 insights_list.append({
                     "category": insight.category,
-                    "severity": insight.severity.value,
+                    "severity": insight.severity,  # Already a string, no .value needed
                     "title": insight.title,
                     "description": insight.description,
                     "affected_columns": insight.affected_columns,
@@ -136,13 +137,13 @@ Output format:
                 "recommendation": "Use the Intelligence Hub (Chat) to ask specific questions about the details of this text."
             })
         
-        result = {
+        result = sanitize_dict({
             "file_id": request.file_id,
             "sheet_index": request.sheet_index,
             "insights": insights_list,
             "summary": summary,
             "total_insights": len(insights_list)
-        }
+        })
         
         # Cache the result for 1 hour (3600 seconds)
         cache_manager.set(cache_key, result, expire=3600)
@@ -177,6 +178,11 @@ async def parse_natural_language_query(request: QueryRequest):
     """
     try:
         import hashlib
+        
+        # Validate required fields
+        if not request.query or not request.query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
         # Check cache first (1-hour TTL)
         query_hash = hashlib.md5(request.query.lower().strip().encode()).hexdigest()[:10]
         cache_key = f"query_parse:{request.file_id}:{request.sheet_index}:{query_hash}"
@@ -213,11 +219,14 @@ async def parse_natural_language_query(request: QueryRequest):
         if not parsed.chart_type:
             parsed.chart_type = parser.suggest_chart_for_intent(parsed, df)
         
-        return {
+        # Handle intent value - may be string or Enum
+        intent_value = parsed.intent.value if hasattr(parsed.intent, 'value') else str(parsed.intent)
+        
+        result = sanitize_dict({
             "file_id": request.file_id,
             "query": request.query,
             "parsed": {
-                "intent": parsed.intent.value,
+                "intent": intent_value,
                 "chart_type": parsed.chart_type,
                 "columns": parsed.columns,
                 "filters": parsed.filters,
@@ -228,7 +237,7 @@ async def parse_natural_language_query(request: QueryRequest):
                 "confidence": parsed.confidence
             },
             "message": "Query parsed successfully. Use /charts/create to generate visualization."
-        }
+        })
         
         # Cache the result for 1 hour (3600 seconds)
         cache_manager.set(cache_key, result, expire=3600)
@@ -236,6 +245,8 @@ async def parse_natural_language_query(request: QueryRequest):
         
         return result
     
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error parsing query: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

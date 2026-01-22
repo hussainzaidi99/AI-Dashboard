@@ -269,10 +269,35 @@ async def get_upload_status(file_id: str):
 @router.get("/list")
 async def list_uploaded_files():
     """
-    List all uploaded files
+    List all uploaded files with formatted file sizes
     """
+    from app.utils.response_sanitizer import sanitize_dict
+    
+    def format_file_size(size_bytes):
+        """Format bytes to human-readable size"""
+        if not isinstance(size_bytes, (int, float)) or size_bytes < 0:
+            return "0 KB"
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024.0:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024.0
+        return f"{size_bytes:.1f} TB"
+    
     files = await FileUpload.find_all().to_list()
-    return {
-        "total_files": len(files),
-        "files": files
-    }
+    
+    # Convert MongoDB documents to dicts and sanitize
+    sanitized_files = []
+    for file in files:
+        file_dict = file.dict() if hasattr(file, 'dict') else dict(file)
+        file_dict = sanitize_dict(file_dict)
+        
+        # Add formatted file size
+        file_size = file_dict.get('file_size', 0)
+        file_dict['file_size_formatted'] = format_file_size(file_size)
+        
+        sanitized_files.append(file_dict)
+    
+    return sanitize_dict({
+        "total_files": len(sanitized_files),
+        "files": sanitized_files
+    })

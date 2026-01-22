@@ -11,6 +11,7 @@ from functools import wraps
 import logging
 
 from app.config import settings
+from app.utils.json_encoder import serialize_to_json, deserialize_from_json
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ class CacheManager:
         try:
             value = self.redis_client.get(key)
             if value:
-                return json.loads(value)
+                return deserialize_from_json(value)
             return None
         except Exception as e:
             logger.error(f"Cache get error: {str(e)}")
@@ -94,7 +95,7 @@ class CacheManager:
             return True
         
         try:
-            serialized = json.dumps(value)
+            serialized = serialize_to_json(value)
             if expire:
                 self.redis_client.setex(key, expire, serialized)
             else:

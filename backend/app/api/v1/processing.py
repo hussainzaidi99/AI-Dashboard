@@ -21,6 +21,7 @@ from app.config import get_upload_path
 from app.core.processors import get_processor
 from app.models.mongodb_models import FileUpload, ProcessingJob
 from app.utils.cache import cache_manager
+from app.utils.json_encoder import serialize_to_json
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -114,10 +115,10 @@ async def process_file(request: ProcessRequest, background_tasks: BackgroundTask
         
         # Store on disk for persistence across restarts (avoids 404s)
         try:
-            import json
             persistence_path = get_upload_path(f"{file_id}.json")
             with open(persistence_path, 'w') as f:
-                json.dump(result_payload, f)
+                # Use custom encoder to handle Pandas types (Timestamp, etc.)
+                f.write(serialize_to_json(result_payload))
             logger.info(f"Saved persistence file: {persistence_path}")
         except Exception as pe:
             logger.warning(f"Failed to save persistence file: {str(pe)}")
