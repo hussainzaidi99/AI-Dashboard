@@ -70,7 +70,9 @@ async def generate_insights(request: InsightRequest):
         insights_list = []
         summary = ""
         
-        if has_dataframes:
+        is_tabular = has_dataframes and len(data['dataframes'][request.sheet_index]['data']) > 2
+        
+        if is_tabular:
             # Get DataFrame
             sheet_data = data['dataframes'][request.sheet_index]
             df = pd.DataFrame(sheet_data['data'])
@@ -79,7 +81,7 @@ async def generate_insights(request: InsightRequest):
             generator = InsightGenerator()
             insights = generator.analyze_dataframe(df)
             
-            # Generate AI summary (GROQ API CALL)
+            # Generate AI summary (GROQ/Gemini API CALL)
             summary = await generator.generate_ai_summary(
                 df=df,
                 insights=insights,
@@ -101,21 +103,37 @@ async def generate_insights(request: InsightRequest):
             # Generate insights from text only
             from app.core.ai import get_llm_client
             llm = get_llm_client()
-            text_snippet = data['text_content'][:4000]
+            text_snippet = data['text_content'][:5000]
+            
+            summary_prompt = f"""Please provide a high-level executive summary for this document.
+Focus on the core message, key themes, and any important entities mentioned.
+
+DOCUMENT CONTENT:
+{text_snippet}
+
+Output format:
+### Executive Summary
+[High-level overview]
+
+### Key Takeaways
+- [Takeaway 1]
+- [Takeaway 2]
+- [Takeaway 3]
+"""
             
             summary = await llm.generate(
-                prompt=f"Please provide an executive summary and 3 key takeaways from this document content:\n\n{text_snippet}",
-                system_message="You are a document analysis assistant."
+                prompt=summary_prompt,
+                system_message="You are a sophisticated Document Intelligence Assistant. Your goal is to provide a dense, professional summary of text content."
             )
             
             insights_list.append({
                 "category": "analysis",
                 "severity": "info",
-                "title": "Text Analysis Complete",
-                "description": "This document consists primarily of unstructured text. Insights are derived from thematic analysis.",
+                "title": "Unstructured Text Analysis",
+                "description": "This document contains primarily unstructured text. We've used NLP to extract the core themes.",
                 "affected_columns": [],
                 "numerical_evidence": {},
-                "recommendation": "Use the Intelligence Assistant to ask specific questions about the content."
+                "recommendation": "Use the Intelligence Hub (Chat) to ask specific questions about the details of this text."
             })
         
         result = {
@@ -337,23 +355,26 @@ PROTOCOL:
 def _prepare_data_context(data: dict, sheet_index: int = 0) -> str:
     """Helper to extract and format data context for LLM"""
     has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+    text_content = data.get('text_content', '')
     
+    # If we have trivial or no dataframes but have text content, use text.
     if has_dataframes:
-        if sheet_index >= len(data['dataframes']):
-            return "Error: Sheet index out of range."
-            
-        sheet_data = data['dataframes'][sheet_index]
-        df = pd.DataFrame(sheet_data['data'])
-        cols = df.columns[:20].tolist()
-        
-        context = f"Table Discovery: {len(df)} rows, {len(df.columns)} columns.\n"
-        context += f"Headers: {', '.join(cols)}\n"
-        context += f"Data Sample (First 3 rows):\n{df[cols].head(3).to_string()}\n"
-        context += f"Stats:\n{df.describe().iloc[:, :len(cols)].head(4).to_string()}"
-        return context
-    
-    elif data.get('text_content'):
-        return f"Document Content Snippet: {data['text_content'][:4000]}"
+        if sheet_index < len(data['dataframes']):
+            sheet_data = data['dataframes'][sheet_index]
+            # Use 'data' length to check if it's substantial
+            if len(sheet_data.get('data', [])) > 2:
+                df = pd.DataFrame(sheet_data['data'])
+                cols = df.columns[:20].tolist()
+                
+                context = f"Table Discovery: {len(df)} rows, {len(df.columns)} columns.\n"
+                context += f"Headers: {', '.join(cols)}\n"
+                context += f"Data Sample (First 3 rows):\n{df[cols].head(3).to_string()}\n"
+                context += f"Stats:\n{df.describe().iloc[:, :len(cols)].head(4).to_string()}"
+                return context
+
+    # Fallback to text content if available
+    if text_content:
+        return f"Document Content Snippet: {text_content[:6000]}"
     
     return "No contextual data found."
 

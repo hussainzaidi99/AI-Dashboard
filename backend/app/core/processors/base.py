@@ -223,13 +223,8 @@ class BaseProcessor(ABC):
     
     def extract_tables_from_text(self, text: str) -> List[pd.DataFrame]:
         """
-        Try to extract table-like structures from plain text
-        
-        Args:
-            text: Plain text content
-        
-        Returns:
-            List of extracted DataFrames
+        Try to extract table-like structures from plain text with strict heuristics
+        to avoid false positives from natural sentences.
         """
         dataframes = []
         
@@ -239,25 +234,64 @@ class BaseProcessor(ABC):
         for block in blocks:
             lines = [line.strip() for line in block.split('\n') if line.strip()]
             
-            if len(lines) < 2:
+            # HEURISTIC 1: Minimum rows (at least 3: header + 2 data rows)
+            if len(lines) < 3:
                 continue
             
             # Check if lines have consistent delimiters
             for delimiter in ['\t', '|', ',', ';']:
-                if all(delimiter in line for line in lines):
-                    try:
-                        from io import StringIO
-                        df = pd.read_csv(
-                            StringIO('\n'.join(lines)),
-                            delimiter=delimiter,
-                            engine='python'
-                        )
-                        
-                        if len(df.columns) > 1 and len(df) > 0:
-                            dataframes.append(self.clean_dataframe(df))
-                            break
-                    except:
-                        continue
+                # Count occurances in each line
+                counts = [line.count(delimiter) for line in lines]
+                
+                # HEURISTIC 2: Minimum columns (at least 1 delimiter for 2 columns)
+                if all(count >= 1 for count in counts):
+                    # HEURISTIC 3: Structural Consistency
+                    # Most lines should have the exact same number of delimiters
+                    most_common_count = max(set(counts), key=counts.count)
+                    consistency = counts.count(most_common_count) / len(counts)
+                    
+                    if consistency >= 0.7: # 70% of rows must match the common structure
+                        try:
+                            from io import StringIO
+                            df = pd.read_csv(
+                                StringIO('\n'.join(lines)),
+                                sep=delimiter,
+                                engine='python',
+                                on_bad_lines='skip'
+                            )
+                            
+                            # HEURISTIC 4: Density check
+                            # Tables usually have short cells. If average cell length is too high, it might be text.
+                            avg_cell_len = df.astype(str).map(len).values.mean()
+                            
+                            # HEURISTIC 5: Delimiter vs Text Ratio
+                            # In a table, delimiters should be fairly frequent compared to non-space text.
+                            total_chars = sum(len(line.replace(' ', '')) for line in lines)
+                            total_delimiters = sum(counts)
+                            chars_per_delimiter = total_chars / total_delimiters if total_delimiters > 0 else 999
+                            
+                            # HEURISTIC 6: Row Length Consistency (CV)
+                            line_lens = [len(line) for line in lines]
+                            std_dev = pd.Series(line_lens).std()
+                            mean_len = pd.Series(line_lens).mean()
+                            cv = std_dev / mean_len if mean_len > 0 else 1.0
+
+                            # HEURISTIC 7: Trailing Punctuation (Sentences usually end with periods)
+                            ends_with_period = sum(1 for line in lines if line.strip().endswith('.'))
+                            period_ratio = ends_with_period / len(lines)
+
+                            # Strict check: 
+                            # - Avg Cell < 40 (Tables have short cells)
+                            # - Chars/Delim < 15 (Tables have high delimiter density)
+                            # - Consistency CV < 0.3 (Tables are very uniform)
+                            # - Period Ratio < 0.5 (Tables don't usually end with periods on every row)
+                            if (len(df.columns) > 1 and len(df) >= 2 and 
+                                avg_cell_len < 40 and chars_per_delimiter < 20 and 
+                                cv < 0.3 and period_ratio < 0.5):
+                                dataframes.append(self.clean_dataframe(df))
+                                break
+                        except:
+                            continue
         
         return dataframes
     

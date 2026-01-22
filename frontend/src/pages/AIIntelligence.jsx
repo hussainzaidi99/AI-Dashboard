@@ -170,12 +170,17 @@ const AIIntelligence = () => {
                                                     </ReactMarkdown>
                                                 </div>
                                             ) : (
-                                                <p>
-                                                    {isTextOnly
-                                                        ? "Document synthesis complete. Our AI has parsed the text content to identify core themes, key entities, and significant insights."
-                                                        : "Global analysis complete. Our neural engines have parsed the dataset to identify core structural patterns and optimization opportunities."
-                                                    }
-                                                </p>
+                                                <div className="space-y-4">
+                                                    <p className="font-bold text-white/90">
+                                                        {isTextOnly
+                                                            ? "Thematic extraction complete. I've parsed the document and am ready for your questions."
+                                                            : "Deep analysis finished. Core structural patterns and key data distributions are mapped."
+                                                        }
+                                                    </p>
+                                                    <p className="text-sm opacity-70">
+                                                        Waiting for the final synthesis layers to load... Most insights are already accessible in the Intelligence Hub.
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
