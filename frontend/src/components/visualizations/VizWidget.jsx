@@ -13,27 +13,37 @@ const VizWidget = ({ config, title, description, loading, error }) => {
     const plotRef = useRef(null);
     const plotInitialized = useRef(false);
 
-    // Memoize Plotly layout to maintain performance
+    // Memoize Plotly layout to maintain performance with dark theme
     const plotlyLayout = useMemo(() => {
         if (!config || !config.layout) return {};
 
         return {
             ...config.layout,
             autosize: true,
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
+            paper_bgcolor: 'rgba(15,20,35,0.95)',
+            plot_bgcolor: 'rgba(25,30,45,0.9)',
             font: {
-                family: 'Inter, system-ui, sans-serif',
-                color: '#94a3b8',
+                family: "'Segoe UI', 'Roboto', 'Inter', system-ui, sans-serif",
+                color: 'rgba(220,220,230,0.9)',
+                size: 12
             },
-            margin: { l: 40, r: 20, t: 40, b: 40 },
+            margin: { l: 60, r: 40, t: 60, b: 60 },
             showlegend: config.layout.showlegend ?? true,
             legend: {
                 orientation: 'h',
-                y: -0.2,
+                y: -0.15,
                 x: 0.5,
                 xanchor: 'center',
+                bgcolor: 'rgba(25,30,45,0.8)',
+                bordercolor: 'rgba(100,120,160,0.3)',
+                borderwidth: 1,
+                font: { size: 11, color: 'rgba(200,200,220,0.9)' }
             },
+            hovermode: 'x unified',
+            transition: {
+                duration: 500,
+                easing: 'cubic-in-out'
+            }
         };
     }, [config]);
 
@@ -60,23 +70,34 @@ const VizWidget = ({ config, title, description, loading, error }) => {
         const renderPlot = async () => {
             try {
                 if (!plotInitialized.current) {
-                    // Initial plot creation
+                    // Initial plot creation with smooth animation
                     await Plotly.newPlot(
                         plotRef.current,
                         plotlyData,
                         plotlyLayout,
                         {
-                            displayModeBar: false,
+                            displayModeBar: true,
+                            displaylogo: false,
                             responsive: true,
+                            toImageButtonOptions: {
+                                format: 'png',
+                                width: 1200,
+                                height: 800
+                            }
                         }
                     );
                     plotInitialized.current = true;
                 } else {
-                    // Update existing plot
+                    // Update existing plot with animation
                     await Plotly.react(
                         plotRef.current,
                         plotlyData,
-                        plotlyLayout
+                        plotlyLayout,
+                        {
+                            displayModeBar: true,
+                            displaylogo: false,
+                            responsive: true
+                        }
                     );
                 }
             } catch (err) {
@@ -112,66 +133,81 @@ const VizWidget = ({ config, title, description, loading, error }) => {
     }, []);
 
     return (
-        <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all duration-500">
-            {/* Widget Header */}
+        <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_8px_40px_rgba(59,130,246,0.2)] transition-all duration-500 bg-gradient-to-br from-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-slate-700/30">
+            {/* Widget Header with Dark Theme */}
             <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h3 className="text-xl font-bold tracking-tight text-white/90">{title || 'Data Visualization'}</h3>
-                    {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                        {title || 'Data Visualization'}
+                    </h3>
+                    {description && <p className="text-sm text-slate-400 mt-1 font-medium">{description}</p>}
                 </div>
 
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-all">
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-blue-400/20">
                         <Info size={18} />
                     </button>
-                    <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-all">
+                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 hover:from-emerald-500/30 hover:to-green-600/30 text-emerald-300 hover:text-emerald-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-emerald-400/20">
                         <Download size={18} />
                     </button>
-                    <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-all">
+                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 hover:from-purple-500/30 hover:to-pink-600/30 text-purple-300 hover:text-purple-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-purple-400/20">
                         <Maximize2 size={18} />
                     </button>
                 </div>
             </div>
 
-            {/* Internal Content Section */}
-            <div className="flex-1 relative min-h-[300px] w-full overflow-hidden">
+            {/* Premium Dark Content Section */}
+            <div className="flex-1 relative min-h-[300px] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/20">
                 {loading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-white/5 border-t-white rounded-full animate-spin" />
-                        <p className="text-white/40 animate-pulse font-black uppercase text-[10px] tracking-widest">Hydrating dataset...</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
+                        <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 rounded-full border-4 border-slate-600/30" />
+                            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 border-r-cyan-400 animate-spin" style={{ animationDuration: '1.5s' }} />
+                            <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-purple-400 animate-spin" style={{ animationDuration: '2.5s', animationDirection: 'reverse' }} />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-slate-200 font-semibold text-sm">Loading Visualization</p>
+                            <p className="text-slate-400 text-xs mt-1 animate-pulse">Rendering your chart...</p>
+                        </div>
                     </div>
                 ) : error ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                        <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-4 bg-gradient-to-br from-slate-900 via-red-900/20 to-slate-900">
+                        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shadow-lg border border-red-400/30">
                             <Info size={32} />
                         </div>
-                        <p className="text-rose-200/60 font-medium">Failed to render visualization.</p>
-                        <button className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-sm transition-all">
+                        <div>
+                            <p className="text-red-300 font-semibold">Failed to render visualization</p>
+                            <p className="text-red-400/70 text-sm mt-1">Please check your data and try again</p>
+                        </div>
+                        <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-xl border border-red-400/30">
                             Retry Sync
                         </button>
                     </div>
                 ) : config && hasValidData ? (
                     <div
                         ref={plotRef}
-                        className="w-full h-full animate-in fade-in zoom-in-95 duration-700"
+                        className="w-full h-full animate-in fade-in duration-700"
                         style={{ minHeight: '300px' }}
                     />
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-                        <p className="text-muted-foreground/40 font-medium">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center">
+                        <div className="w-20 h-20 rounded-full bg-slate-700/30 flex items-center justify-center mb-4 border border-slate-600/30">
+                            <Info size={40} className="text-slate-500" />
+                        </div>
+                        <p className="text-slate-400 font-medium text-sm">
                             {config ? 'No valid chart data available.' : 'No configuration data available.'}
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* Footer Info */}
-            <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+            {/* Dark Theme Footer */}
+            <div className="mt-6 pt-6 border-t border-slate-700/30 flex items-center justify-between text-xs font-semibold tracking-widest text-slate-400">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                    <span>Real-time Sync</span>
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg" />
+                    <span>REAL-TIME SYNC</span>
                 </div>
-                <span>Powered by Plotly engine</span>
+                <span className="text-right">POWERED BY PLOTLY</span>
             </div>
         </div>
     );

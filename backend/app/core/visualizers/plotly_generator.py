@@ -72,7 +72,9 @@ class PlotlyGenerator:
         df: pd.DataFrame,
         config: ChartConfig
     ) -> go.Figure:
-        """Generate bar chart"""
+        """Generate bar chart with dark theme premium styling"""
+        color_palette = self._get_premium_histogram_colors(config.color_palette)
+        
         fig = px.bar(
             df,
             x=config.x,
@@ -82,18 +84,69 @@ class PlotlyGenerator:
             labels={config.x: config.x_label or config.x,
                    (config.y if isinstance(config.y, str) else "Values"): config.y_label or (config.y if isinstance(config.y, str) else "Values")} if config.x and config.y else None,
             hover_data=config.hover_data,
-            color_discrete_sequence=self._get_color_palette(config.color_palette),
+            color_discrete_sequence=color_palette,
             **config.options
         )
         
-        return self._apply_common_styling(fig, config)
+        # Premium bar styling
+        fig.update_traces(
+            marker=dict(
+                line=dict(
+                    color='rgba(30,30,40,0.6)',
+                    width=1.5
+                ),
+                opacity=0.92
+            ),
+            hovertemplate='<b>%{x}</b><br>Value: %{y:,.2f}<br><extra></extra>'
+        )
+        
+        fig = self._apply_common_styling(fig, config)
+        
+        # Dark theme layout
+        fig.update_layout(
+            dragmode='zoom',
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(255,255,255,0.08)',
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            hovermode='x unified',
+            plot_bgcolor='rgba(25,30,45,0.9)',
+            paper_bgcolor='rgba(15,20,35,0.95)',
+            font=dict(
+                family="'Segoe UI', 'Roboto', sans-serif",
+                color='rgba(220,220,230,0.9)',
+                size=12
+            ),
+            transition=dict(duration=500, easing='cubic-in-out'),
+            title=dict(
+                font=dict(size=18, color='rgba(220,230,255,0.95)')
+            )
+        )
+        
+        return fig
     
     def generate_line_chart(
         self,
         df: pd.DataFrame,
         config: ChartConfig
     ) -> go.Figure:
-        """Generate line chart"""
+        """Generate line chart with dark theme and premium animations"""
+        color_palette = self._get_premium_histogram_colors(config.color_palette)
+        
         fig = px.line(
             df,
             x=config.x,
@@ -103,12 +156,63 @@ class PlotlyGenerator:
             labels={config.x: config.x_label or config.x,
                    (config.y if isinstance(config.y, str) else "Values"): config.y_label or (config.y if isinstance(config.y, str) else "Values")} if config.x and config.y else None,
             hover_data=config.hover_data,
-            color_discrete_sequence=self._get_color_palette(config.color_palette),
+            color_discrete_sequence=color_palette,
             markers=config.options.get('markers', True),
             **{k: v for k, v in config.options.items() if k != 'markers'}
         )
         
-        return self._apply_common_styling(fig, config)
+        # Premium line styling
+        fig.update_traces(
+            line=dict(width=2.5),
+            marker=dict(
+                size=6,
+                symbol='circle',
+                line=dict(width=1.5, color='rgba(15,20,35,0.95)'),
+                opacity=0.95
+            ),
+            hovertemplate='<b>%{x}</b><br>Value: %{y:,.2f}<br><extra></extra>'
+        )
+        
+        fig = self._apply_common_styling(fig, config)
+        
+        # Dark theme layout with smooth animation
+        fig.update_layout(
+            dragmode='zoom',
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(255,255,255,0.08)',
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(255,255,255,0.08)',
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            hovermode='x unified',
+            plot_bgcolor='rgba(25,30,45,0.9)',
+            paper_bgcolor='rgba(15,20,35,0.95)',
+            font=dict(
+                family="'Segoe UI', 'Roboto', sans-serif",
+                color='rgba(220,220,230,0.9)',
+                size=12
+            ),
+            transition=dict(duration=600, easing='cubic-in-out'),
+            title=dict(
+                font=dict(size=18, color='rgba(220,230,255,0.95)')
+            )
+        )
+        
+        return fig
     
     def generate_scatter_chart(
         self,
@@ -138,7 +242,13 @@ class PlotlyGenerator:
         df: pd.DataFrame,
         config: ChartConfig
     ) -> go.Figure:
-        """Generate histogram"""
+        """Generate histogram with dark theme and premium animations"""
+        # Use optimal bins for clear visualization
+        nbins = config.options.get('nbins', 20)
+        
+        # Get premium color palette based on config
+        color_palette = self._get_premium_histogram_colors(config.color_palette)
+        
         fig = px.histogram(
             df,
             x=config.x,
@@ -147,12 +257,129 @@ class PlotlyGenerator:
             title=config.title,
             labels={config.x: config.x_label or config.x} if config.x else None,
             hover_data=config.hover_data,
-            nbins=config.options.get('nbins', 30),
-            color_discrete_sequence=self._get_color_palette(config.color_palette),
+            nbins=nbins,
+            color_discrete_sequence=color_palette,
             **{k: v for k, v in config.options.items() if k != 'nbins'}
         )
         
-        return self._apply_common_styling(fig, config)
+        # Premium bar styling with dark theme
+        fig.update_traces(
+            marker=dict(
+                line=dict(
+                    color='rgba(30,30,40,0.6)',  # Darker border for separation
+                    width=1.5
+                ),
+                opacity=0.92
+            ),
+            hovertemplate='<b>%{x}</b><br>Count: %{y}<br><extra></extra>'
+        )
+        
+        # Apply common styling
+        fig = self._apply_common_styling(fig, config)
+        
+        # Add premium interactivity and animations with DARK THEME
+        fig.update_layout(
+            dragmode='zoom',
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(255,255,255,0.08)',
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(255,255,255,0.08)',
+                zeroline=False,
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)',
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11)
+            ),
+            hovermode='x unified',
+            plot_bgcolor='rgba(25,30,45,0.9)',  # Dark background
+            paper_bgcolor='rgba(15,20,35,0.95)',  # Darker paper background
+            font=dict(
+                family="'Segoe UI', 'Roboto', sans-serif",
+                size=12,
+                color='rgba(220,220,230,0.9)'
+            ),
+            # Smooth animations
+            transition=dict(
+                duration=500,
+                easing='cubic-in-out'
+            ),
+            # Enhanced legend styling
+            legend=dict(
+                bgcolor='rgba(25,30,45,0.8)',
+                bordercolor='rgba(100,120,160,0.3)',
+                borderwidth=1,
+                font=dict(size=11, color='rgba(200,200,220,0.9)')
+            ),
+            # Title styling
+            title=dict(
+                font=dict(
+                    size=18,
+                    color='rgba(220,230,255,0.95)',
+                    family="'Segoe UI', 'Roboto', sans-serif"
+                )
+            ),
+            margin=dict(l=60, r=40, t=80, b=60),
+            showlegend=config.show_legend
+        )
+        
+        return fig
+    
+    def _get_premium_histogram_colors(self, palette_name: Optional[str] = None) -> List[str]:
+        """Get premium color schemes optimized for dark theme histograms"""
+        premium_palettes = {
+            'default': [
+                'rgba(59, 130, 246, 1.0)',    # Bright Blue
+                'rgba(34, 197, 94, 1.0)',     # Fresh Green
+                'rgba(168, 85, 247, 1.0)',    # Purple Accent
+                'rgba(249, 115, 22, 1.0)',    # Warm Orange
+                'rgba(236, 72, 153, 1.0)',    # Rose Pink
+                'rgba(6, 182, 212, 1.0)',     # Cyan
+                'rgba(14, 165, 233, 1.0)',    # Sky Blue
+                'rgba(139, 92, 246, 1.0)',    # Light Purple
+            ],
+            'modern': [
+                'rgba(99, 102, 241, 1.0)',    # Indigo
+                'rgba(34, 197, 94, 1.0)',     # Spotify Green
+                'rgba(251, 191, 36, 1.0)',    # Golden
+                'rgba(239, 68, 68, 1.0)',     # Red
+                'rgba(168, 85, 247, 1.0)',    # Purple
+                'rgba(20, 184, 166, 1.0)',    # Teal
+            ],
+            'cool': [
+                'rgba(30, 144, 255, 1.0)',    # Dodger Blue
+                'rgba(0, 206, 209, 1.0)',     # Dark Turquoise
+                'rgba(65, 105, 225, 1.0)',    # Royal Blue
+                'rgba(72, 209, 204, 1.0)',    # Medium Turquoise
+                'rgba(123, 104, 238, 1.0)',   # Medium Slate Blue
+            ],
+            'warm': [
+                'rgba(255, 140, 0, 1.0)',     # Dark Orange
+                'rgba(255, 69, 0, 1.0)',      # Red Orange
+                'rgba(220, 20, 60, 1.0)',     # Crimson
+                'rgba(255, 140, 0, 1.0)',     # Orange
+                'rgba(255, 105, 180, 1.0)',   # Hot Pink
+            ],
+            'gradient': [
+                'rgba(99, 102, 241, 1.0)',    # Indigo
+                'rgba(59, 130, 246, 1.0)',    # Blue
+                'rgba(34, 197, 94, 1.0)',     # Green
+                'rgba(251, 146, 60, 1.0)',    # Orange
+                'rgba(239, 68, 68, 1.0)',     # Red
+            ],
+        }
+        
+        palette_key = palette_name if palette_name in premium_palettes else 'default'
+        return premium_palettes[palette_key]
     
     def generate_box_plot(
         self,
@@ -221,7 +448,7 @@ class PlotlyGenerator:
         df: pd.DataFrame,
         config: ChartConfig
     ) -> go.Figure:
-        """Generate heatmap"""
+        """Generate heatmap with dark theme"""
         # If df is a correlation matrix
         if config.options.get('is_correlation', False):
             fig = px.imshow(
@@ -260,7 +487,43 @@ class PlotlyGenerator:
         else:
             raise ValueError("Heatmap requires x, y, and values columns or a 2D matrix")
         
-        return self._apply_common_styling(fig, config)
+        fig = self._apply_common_styling(fig, config)
+        
+        # Apply dark theme to heatmap
+        fig.update_layout(
+            plot_bgcolor='rgba(25,30,45,0.9)',
+            paper_bgcolor='rgba(15,20,35,0.95)',
+            font=dict(
+                family="'Segoe UI', 'Roboto', sans-serif",
+                color='rgba(220,220,230,0.9)',
+                size=12
+            ),
+            xaxis=dict(
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11),
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)'
+            ),
+            yaxis=dict(
+                tickfont=dict(color='rgba(200,200,200,0.8)', size=11),
+                showline=True,
+                linewidth=2,
+                linecolor='rgba(200,200,200,0.2)'
+            ),
+            coloraxis=dict(
+                colorbar=dict(
+                    tickfont=dict(color='rgba(200,200,200,0.8)'),
+                    outlinecolor='rgba(200,200,200,0.2)',
+                    thickness=20
+                )
+            ),
+            title=dict(
+                font=dict(size=18, color='rgba(220,230,255,0.95)')
+            ),
+            transition=dict(duration=500, easing='cubic-in-out')
+        )
+        
+        return fig
     
     def generate_area_chart(
         self,
