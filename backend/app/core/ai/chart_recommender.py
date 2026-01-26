@@ -34,12 +34,12 @@ class ChartRecommender:
         self.chart_rules = {
             "single_numeric": ["histogram", "box_plot", "violin_plot", "density_plot"],
             "single_categorical": ["bar_chart", "pie_chart", "donut_chart"],
-            "two_numeric": ["scatter_plot", "line_chart", "hexbin", "regression_plot"],
-            "categorical_numeric": ["bar_chart", "violin_plot", "box_plot", "strip_plot"],
-            "time_series": ["line_chart", "area_chart", "candlestick"],
-            "multi_numeric": ["correlation_heatmap", "parallel_coordinates", "scatter_matrix"],
-            "geographic": ["choropleth_map", "scatter_map", "density_map"],
-            "hierarchical": ["treemap", "sunburst", "sankey"],
+            "two_numeric": ["line_chart", "area_chart", "bubble_chart"],
+            "categorical_numeric": ["bar_chart", "violin_plot", "box_plot"],
+            "time_series": ["line_chart", "area_chart"],
+            "multi_numeric": ["pie_chart", "bar_chart", "bubble_chart"],
+            "geographic": ["choropleth_map"],
+            "hierarchical": ["treemap", "sunburst"],
         }
     
     def analyze_data_structure(self, df: pd.DataFrame) -> Dict[str, Any]:
@@ -139,10 +139,8 @@ class ChartRecommender:
             return data_types.get("numeric", [])[:1]
         elif chart_type in ["bar_chart", "pie_chart", "donut_chart"]:
             return data_types.get("categorical", [])[:1]
-        elif chart_type in ["scatter_plot", "line_chart", "hexbin"]:
+        elif chart_type in ["line_chart", "area_chart", "bubble_chart"]:
             return data_types.get("numeric", [])[:2]
-        elif chart_type in ["correlation_heatmap"]:
-            return data_types.get("numeric", [])
         else:
             return []
     
@@ -202,11 +200,11 @@ Provide chart recommendations in the following JSON format:
 {{
     "recommendations": [
         {{
-            "chart_type": "scatter_plot",
+            "chart_type": "line_chart",
             "confidence": 0.9,
-            "reasoning": "Perfect for showing relationship between two numeric variables",
+            "reasoning": "Perfect for showing trends and relationships between variables",
             "columns_required": ["column1", "column2"],
-            "config": {{"color_by": "category"}}
+            "config": {{"markers": true}}
         }}
     ]
 }}
@@ -214,8 +212,7 @@ Provide chart recommendations in the following JSON format:
 Chart types to choose from:
 - histogram, box_plot, violin_plot, density_plot (single numeric)
 - bar_chart, pie_chart, donut_chart (categorical)
-- scatter_plot, line_chart, bubble_chart, regression_plot (two numeric)
-- correlation_heatmap, parallel_coordinates (multi numeric)
+- line_chart, area_chart, bubble_chart (two numeric or time series)
 - treemap, sunburst (hierarchical)
 """
         

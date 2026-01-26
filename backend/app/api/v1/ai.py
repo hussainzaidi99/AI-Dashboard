@@ -176,6 +176,7 @@ async def parse_natural_language_query(request: QueryRequest):
     """
     Parse natural language query and generate visualization with caching
     """
+    print(f"\n[AI Query] Incoming request: {request.query}")
     try:
         import hashlib
         
@@ -219,6 +220,46 @@ async def parse_natural_language_query(request: QueryRequest):
         if not parsed.chart_type:
             parsed.chart_type = parser.suggest_chart_for_intent(parsed, df)
         
+        # New: Generate chart config if we have enough info
+        chart_config = None
+        if parsed.columns:
+            from app.core.visualizers import ChartFactory
+            import json
+            
+            try:
+                factory = ChartFactory()
+                # Determine x and y based on columns and chart type
+                x_col = parsed.columns[0] if len(parsed.columns) > 0 else None
+                y_col = parsed.columns[1] if len(parsed.columns) > 1 else None
+                
+                # Hierarchical and specialized options mapping
+                options = {}
+                
+                # Hierarchical charts (Sunburst/Treemap) require 'path'
+                if parsed.chart_type in ["sunburst", "treemap"]:
+                    options["path"] = parsed.groupby if parsed.groupby else [x_col] if x_col else []
+                
+                # Donut chart specific
+                if parsed.chart_type == "donut":
+                    options["hole"] = 0.65
+                
+                # General groupby/agg passing
+                if parsed.groupby and "path" not in options:
+                    options["color"] = parsed.groupby[0]
+                
+                # Create chart with merged options
+                fig = factory.create(
+                    chart_type=parsed.chart_type or "bar",
+                    df=df,
+                    x=x_col if parsed.chart_type not in ["sunburst", "treemap"] else None,
+                    y=y_col if y_col else (x_col if x_col and parsed.chart_type in ["sunburst", "treemap"] else None),
+                    title=f"AI Result: {request.query[:30]}...",
+                    **options
+                )
+                chart_config = json.loads(fig.to_json())
+            except Exception as e:
+                logger.warning(f"Failed to generate chart config during query parse: {str(e)}")
+
         # Handle intent value - may be string or Enum
         intent_value = parsed.intent.value if hasattr(parsed.intent, 'value') else str(parsed.intent)
         
@@ -236,7 +277,8 @@ async def parse_natural_language_query(request: QueryRequest):
                 "limit": parsed.limit,
                 "confidence": parsed.confidence
             },
-            "message": "Query parsed successfully. Use /charts/create to generate visualization."
+            "chart_config": chart_config,
+            "message": "Query parsed successfully."
         })
         
         # Cache the result for 1 hour (3600 seconds)
@@ -418,3 +460,76 @@ async def get_ai_capabilities():
             "aggregate"
         ]
     }
+
+
+class QuerySuggestionsRequest(BaseModel):
+    file_id: str
+    sheet_index: int = 0
+
+
+@router.post("/suggest-queries")
+async def suggest_queries(request: QuerySuggestionsRequest):
+    """
+    Generate dynamic query suggestions based on dataset structure
+    """
+    try:
+        # Check cache first (5-minute TTL)
+        cache_key = f"query_suggestions:{request.file_id}:{request.sheet_index}"
+        cached_suggestions = cache_manager.get(cache_key)
+        if cached_suggestions:
+            logger.info(f"Returning cached query suggestions for {request.file_id}")
+            return cached_suggestions
+        
+        # Check if file exists in MongoDB
+        file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
+        if not file_upload:
+            raise HTTPException(status_code=404, detail="File not found")
+            
+        data = await get_processed_data(request.file_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="Data not found")
+        
+        has_dataframes = data.get('dataframes') and len(data['dataframes']) > 0
+        
+        if not has_dataframes or request.sheet_index >= len(data['dataframes']):
+            raise HTTPException(status_code=400, detail="No tabular data available")
+        
+        # Get DataFrame
+        sheet_data = data['dataframes'][request.sheet_index]
+        df = pd.DataFrame(sheet_data['data'])
+        
+        # Generate suggestions
+        from app.core.ai.query_suggester import QuerySuggester
+        suggester = QuerySuggester()
+        suggestions = suggester.generate_suggestions(df, max_queries=10)
+        
+        # Convert to dict format
+        suggestions_list = [
+            {
+                "id": s.id,
+                "query": s.query,
+                "category": s.category,
+                "icon": s.icon,
+                "complexity": s.complexity
+            }
+            for s in suggestions
+        ]
+        
+        result = sanitize_dict({
+            "file_id": request.file_id,
+            "sheet_index": request.sheet_index,
+            "queries": suggestions_list,
+            "total": len(suggestions_list)
+        })
+        
+        # Cache for 5 minutes (300 seconds)
+        cache_manager.set(cache_key, result, expire=300)
+        logger.info(f"Generated and cached {len(suggestions_list)} query suggestions")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating query suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

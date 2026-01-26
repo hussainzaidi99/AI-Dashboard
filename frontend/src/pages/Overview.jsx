@@ -18,7 +18,6 @@ import { aiApi } from '../api/ai';
 import { chartsApi } from '../api/charts';
 import { processingApi } from '../api/processing';
 import VizWidget from '../components/visualizations/VizWidget';
-import { motion } from 'framer-motion';
 
 const StatCard = ({ title, value, change, trend, icon: Icon, color, loading }) => (
     <div className="glass-card p-6 rounded-[2rem] flex flex-col justify-between hover:scale-[1.02] transition-all duration-300">
@@ -108,8 +107,8 @@ const Overview = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="h-12 px-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold flex items-center gap-2">
-                        <Zap size={18} className="text-amber-400" />
+                    <button className="h-12 px-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold flex items-center gap-2 text-white/80">
+                        <Zap size={18} />
                         Live Status
                     </button>
                     <button className="h-12 px-6 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-white/5 hover:bg-neutral-200 active:scale-95 transition-all flex items-center gap-2">
@@ -119,148 +118,64 @@ const Overview = () => {
                 </div>
             </header>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Stats Grid - Production Sizing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                    title="Global Rows"
+                    title="Total Records"
                     value={stats?.total_rows?.toLocaleString() || '---'}
-                    change={25} trend="up" icon={Users} color="blue-400"
+                    change={25} trend="up" icon={Users}
                     loading={statsLoading}
                 />
                 <StatCard
-                    title="Data Entities"
+                    title="Intelligence Features"
                     value={stats?.total_columns || '---'}
-                    change={12} trend="up" icon={Activity} color="rose-400"
+                    change={12} trend="up" icon={Activity}
                     loading={statsLoading}
                 />
                 <StatCard
-                    title="Missing Cells"
+                    title="Anomalies Found"
                     value={stats?.null_counts_sum || '0'}
-                    change={stats?.null_percent?.toFixed(1) || '0'} trend="down" icon={TrendingUp} color="emerald-400"
+                    change={stats?.null_percent?.toFixed(1) || '0'} trend="down" icon={TrendingUp}
                     loading={statsLoading}
                 />
                 <StatCard
-                    title="Completeness"
-                    value={quality?.scores?.completeness ? `${(quality.scores.completeness * 100).toFixed(1)}%` : '---'}
-                    change={Math.round((quality?.scores?.completeness || 0) * 100)} trend="up" icon={MousePointer2} color="amber-400"
+                    title="System Reliability"
+                    value={quality?.scores?.completeness
+                        ? `${((quality.scores.completeness > 1 ? quality.scores.completeness / 100 : quality.scores.completeness) * 100).toFixed(1)}%`
+                        : '---'}
+                    change={Math.round((quality?.scores?.completeness || 0) > 1 ? (quality?.scores?.completeness || 0) : (quality?.scores?.completeness || 0) * 100)}
+                    trend="up" icon={MousePointer2} color="amber-400"
                     loading={qualityLoading}
                 />
             </div>
 
-            {/* Main Analysis Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Chart Slot */}
-                <div className="lg:col-span-2">
-                    {hasActiveDataset ? (
-                        <VizWidget
-                            title={dashboard?.widgets?.[0]?.title || "Main Discovery Engine"}
-                            description={dashboard?.widgets?.[0]?.description || "Deep pattern analysis of your primary dataset."}
-                            config={dashboard?.widgets?.[0]?.chart}
-                            loading={dashboardLoading}
-                        />
-                    ) : (
-                        <div className="h-[500px] glass-card rounded-[2.5rem] p-8 flex flex-col items-center justify-center border-2 border-dashed border-white/5 group cursor-pointer hover:border-primary/20 transition-all">
-                            <div className="text-center group-hover:scale-105 transition-transform duration-500">
-                                <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 text-primary shadow-[0_0_30px_rgba(59,130,246,0.1)]">
-                                    <TrendingUp size={36} />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Waiting for Data Pipeline</h3>
-                                <p className="text-muted-foreground max-w-xs mx-auto">
-                                    Upload a dataset in the ingestion zone to activate world-class visualizations.
-                                </p>
-                            </div>
+            {/* Production Dashboard Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {hasActiveDataset ? (
+                    dashboard?.widgets?.map((widget, idx) => (
+                        <div key={idx} className={idx === 0 ? "md:col-span-2 lg:col-span-2" : ""}>
+                            <VizWidget
+                                title={widget.title}
+                                description={widget.description}
+                                config={widget.chart}
+                                loading={dashboardLoading}
+                            />
                         </div>
-                    )}
-                </div>
-
-                {/* AI Discovery Sidebar */}
-                <div className="glass-card rounded-[2.5rem] p-8 flex flex-col">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-bold flex items-center gap-2">
-                            <Sparkles className="text-amber-400" size={20} />
-                            AI Insights
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-bold border border-emerald-500/20 uppercase tracking-widest">Active</span>
-                    </div>
-
-                    <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
-                        {!hasActiveDataset ? (
-                            [1, 2, 3].map((i) => (
-                                <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3 opacity-40">
-                                    <div className="h-4 w-1/3 bg-white/10 rounded" />
-                                    <div className="h-12 w-full bg-white/5 rounded-xl" />
-                                </div>
-                            ))
-                        ) : !shouldLoadInsights ? (
-                            <div className="flex flex-col items-center justify-center h-full py-10 text-center space-y-6">
-                                <div className="w-16 h-16 rounded-3xl bg-amber-400/10 flex items-center justify-center text-amber-400">
-                                    <Sparkles size={32} />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-lg mb-2">Automated Discovery</h4>
-                                    <p className="text-sm text-muted-foreground px-4">
-                                        Run our AI discovery engine to identify hidden trends and anomalies in this dataset.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setShouldLoadInsights(true)}
-                                    className="w-full py-4 bg-white text-black font-bold rounded-2xl shadow-xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 mt-4"
-                                >
-                                    <Sparkles size={18} />
-                                    Generate AI Insights
-                                </button>
+                    ))
+                ) : (
+                    <div className="col-span-full h-[500px] glass-card rounded-[2.5rem] p-8 flex flex-col items-center justify-center border-2 border-dashed border-white/5 group cursor-pointer hover:border-primary/20 transition-all">
+                        <div className="text-center group-hover:scale-105 transition-transform duration-500">
+                            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 text-primary shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+                                <TrendingUp size={36} />
                             </div>
-                        ) : insightsLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 space-y-4">
-                                <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Reasoning...</p>
-                            </div>
-                        ) : insights?.insights?.length > 0 ? (
-                            insights.insights.map((insight, idx) => (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    key={idx}
-                                    className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
-                                >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/70 group-hover:bg-white group-hover:text-black transition-all">
-                                            <TrendingUp size={16} />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">{insight.title || 'Discovery'}</span>
-                                    </div>
-                                    <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-                                        {insight.description || insight}
-                                    </p>
-                                </motion.div>
-                            ))
-                        ) : (
-                            <p className="text-center text-muted-foreground text-sm py-10 italic">No automated insights available for this segment.</p>
-                        )}
+                            <h3 className="text-xl font-bold mb-2">Neural Link Pending</h3>
+                            <p className="text-muted-foreground max-w-sm mx-auto">
+                                Feed the system a dataset to activate the intelligence core and synthesize your dashboard.
+                            </p>
+                        </div>
                     </div>
-
-                    <button className="mt-8 w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg shadow-white/5 hover:bg-neutral-200 transition-all flex items-center justify-center gap-2">
-                        <Sparkles size={18} />
-                        Generate Custom Insight
-                    </button>
-                </div>
+                )}
             </div>
-
-            {/* Secondary Row Slots */}
-            {hasActiveDataset && dashboard?.widgets?.length > 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {dashboard.widgets.slice(1, 3).map((widget, idx) => (
-                        <VizWidget
-                            key={idx}
-                            title={widget.title}
-                            description={widget.description}
-                            config={widget.chart}
-                            loading={dashboardLoading}
-                        />
-                    ))}
-                </div>
-            )}
         </div>
     );
 };

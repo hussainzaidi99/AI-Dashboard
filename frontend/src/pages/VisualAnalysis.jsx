@@ -12,7 +12,11 @@ import {
     Plus,
     Layers,
     ArrowRight,
-    TrendingUp
+    TrendingUp,
+    GitBranch,
+    Award,
+    Sigma,
+    Filter
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -34,8 +38,17 @@ const VisualAnalysis = () => {
         queryKey: ['chart-recommendations', activeFileId, activeSheetIndex],
         queryFn: () => chartsApi.recommend(activeFileId, activeSheetIndex),
         enabled: hasActiveDataset && !isTextOnly,
-        staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
-        cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+        staleTime: 5 * 60 * 1000,
+        cacheTime: 10 * 60 * 1000,
+    });
+
+    // Fetch Query Suggestions with caching
+    const { data: querySuggestions, isLoading: suggestionsLoading } = useQuery({
+        queryKey: ['query-suggestions', activeFileId, activeSheetIndex],
+        queryFn: () => aiApi.suggestQueries(activeFileId, activeSheetIndex),
+        enabled: hasActiveDataset && !isTextOnly,
+        staleTime: 5 * 60 * 1000,
+        cacheTime: 10 * 60 * 1000,
     });
 
     const handleQuerySubmit = async (e) => {
@@ -44,12 +57,11 @@ const VisualAnalysis = () => {
 
         setQueryLoading(true);
         try {
-            const result = await aiApi.parseQuery({
-                file_id: activeFileId,
-                sheet_index: activeSheetIndex,
-                query: query,
-                use_ai: true
-            });
+            const result = await aiApi.parseQuery(
+                activeFileId,
+                query,
+                activeSheetIndex
+            );
 
             if (result.chart_config) {
                 setDraftWidget({
@@ -63,6 +75,56 @@ const VisualAnalysis = () => {
         } finally {
             setQueryLoading(false);
         }
+    };
+
+    const handleSuggestionClick = async (suggestionQuery) => {
+        setQuery(suggestionQuery);
+        setQueryLoading(true);
+        try {
+            const result = await aiApi.parseQuery(
+                activeFileId,
+                suggestionQuery,
+                activeSheetIndex
+            );
+
+            if (result.chart_config) {
+                setDraftWidget({
+                    title: `${suggestionQuery}`,
+                    description: "Generated from Smart Query Suggestion",
+                    chart: result.chart_config
+                });
+            }
+        } catch (err) {
+            console.error("Query failed:", err);
+        } finally {
+            setQueryLoading(false);
+        }
+    };
+
+    const getIconForCategory = (iconName) => {
+        const icons = {
+            BarChart3,
+            TrendingUp,
+            LineChart,
+            GitBranch,
+            Award,
+            Sigma,
+            Filter
+        };
+        return icons[iconName] || Sparkles;
+    };
+
+    const getCategoryColor = (category) => {
+        const colors = {
+            distribution: 'text-blue-400',
+            comparison: 'text-emerald-400',
+            trend: 'text-purple-400',
+            correlation: 'text-amber-400',
+            top_n: 'text-rose-400',
+            aggregation: 'text-cyan-400',
+            filtering: 'text-orange-400'
+        };
+        return colors[category] || 'text-white/70';
     };
 
     return (
@@ -158,31 +220,73 @@ const VisualAnalysis = () => {
 
                             {/* Main Canvas */}
                             <div className="xl:col-span-3 space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {draftWidget && (
+                                {/* Generated Visualization */}
+                                {draftWidget && (
+                                    <div className="max-w-2xl">
                                         <VizWidget
                                             title={draftWidget.title}
                                             description={draftWidget.description}
                                             config={draftWidget.chart}
                                             isAIResult
                                         />
-                                    )}
-                                    {recommendations?.recommendations?.slice(0, 4).map((rec, idx) => (
-                                        <VizWidget
-                                            key={idx}
-                                            title={`${rec.chart_type.toUpperCase()} Analysis`}
-                                            description={rec.reasoning}
-                                            config={rec.config}
-                                        />
-                                    ))}
-                                </div>
+                                    </div>
+                                )}
 
-                                <div className="h-[200px] border-2 border-dashed border-white/5 rounded-[3rem] flex items-center justify-center group cursor-pointer hover:border-white/10 transition-colors">
-                                    <div className="text-center group-hover:scale-105 transition-transform duration-500">
-                                        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 text-muted-foreground/30 border border-white/5">
-                                            <Plus size={32} />
-                                        </div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Drop new logic node</p>
+                                {/* Query Suggestions - Always visible */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xl font-bold flex items-center gap-2">
+                                            <Sparkles className="text-amber-400" size={20} />
+                                            {draftWidget ? 'Generate Another Visualization' : 'Smart Query Suggestions'}
+                                        </h3>
+                                        <span className="text-xs text-muted-foreground font-medium">
+                                            Click any query to generate visualization
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {suggestionsLoading ? (
+                                            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                                                <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />
+                                            ))
+                                        ) : querySuggestions?.queries?.map((suggestion) => {
+                                            const Icon = getIconForCategory(suggestion.icon);
+                                            const colorClass = getCategoryColor(suggestion.category);
+
+                                            return (
+                                                <motion.button
+                                                    key={suggestion.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: suggestion.id * 0.05 }}
+                                                    onClick={() => handleSuggestionClick(suggestion.query)}
+                                                    disabled={queryLoading}
+                                                    className="group relative p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-white/10 text-left transition-all disabled:opacity-50 min-h-[140px]"
+                                                >
+                                                    <div className="flex items-start gap-5">
+                                                        <div className={`w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center ${colorClass} group-hover:scale-110 transition-transform flex-shrink-0`}>
+                                                            <Icon size={28} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">
+                                                                    {suggestion.category}
+                                                                </span>
+                                                                <span className={`text-[10px] px-2.5 py-1 rounded-full border ${suggestion.complexity === 'basic' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                                    suggestion.complexity === 'intermediate' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                                        'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                                                    } font-bold`}>
+                                                                    {suggestion.complexity}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-base font-bold text-white/90 group-hover:text-white leading-relaxed">
+                                                                {suggestion.query}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </motion.button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>

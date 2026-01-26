@@ -19,19 +19,18 @@ class ChartType(str, Enum):
     """Supported chart types"""
     BAR = "bar"
     LINE = "line"
-    SCATTER = "scatter"
     HISTOGRAM = "histogram"
     BOX = "box"
     VIOLIN = "violin"
     PIE = "pie"
     DONUT = "donut"
-    HEATMAP = "heatmap"
     AREA = "area"
     BUBBLE = "bubble"
     SUNBURST = "sunburst"
     TREEMAP = "treemap"
-    DENSITY_HEATMAP = "density_heatmap"
-    PARALLEL_COORDINATES = "parallel_coordinates"
+    CORRELATION_HEATMAP = "correlation_heatmap"
+    GAUGE = "gauge"
+    MULTI_LINE = "multi_line"
 
 
 class ChartFactory:
@@ -45,19 +44,17 @@ class ChartFactory:
         self.chart_methods = {
             ChartType.BAR: self.generator.generate_bar_chart,
             ChartType.LINE: self.generator.generate_line_chart,
-            ChartType.SCATTER: self.generator.generate_scatter_chart,
             ChartType.HISTOGRAM: self.generator.generate_histogram,
             ChartType.BOX: self.generator.generate_box_plot,
             ChartType.VIOLIN: self.generator.generate_violin_plot,
             ChartType.PIE: self.generator.generate_pie_chart,
             ChartType.DONUT: self._create_donut_chart,
-            ChartType.HEATMAP: self.generator.generate_heatmap,
             ChartType.AREA: self.generator.generate_area_chart,
             ChartType.BUBBLE: self.generator.generate_bubble_chart,
             ChartType.SUNBURST: self.generator.generate_sunburst,
             ChartType.TREEMAP: self.generator.generate_treemap,
-            ChartType.DENSITY_HEATMAP: self.generator.generate_density_heatmap,
-            ChartType.PARALLEL_COORDINATES: self.generator.generate_parallel_coordinates,
+            ChartType.GAUGE: self.generator.generate_gauge,
+            ChartType.MULTI_LINE: self.create_multi_line,
         }
     
     def create(
@@ -98,9 +95,12 @@ class ChartFactory:
                 )
             
             # Infer missing parameters
-            if not x and not y:
+            if not x and not y and chart_enum != ChartType.CORRELATION_HEATMAP:
                 x, y = self._infer_columns(df, chart_type)
             
+            # Special handling for correlation heatmap
+            if chart_enum == ChartType.CORRELATION_HEATMAP:
+                return self.create_correlation_matrix(df, **kwargs)
             # Build configuration
             config = self._build_config(
                 chart_type=chart_type,
@@ -201,10 +201,10 @@ class ChartFactory:
                 x = df.columns[0]
                 y = numeric_cols[0] if numeric_cols else None
         
-        elif chart_type in ['scatter', 'bubble']:
+        elif chart_type == 'bubble':
             # Two numeric columns
             if len(df.columns) < 2:
-                raise ValueError("Scatter/Bubble charts require at least 2 columns to infer x and y.")
+                raise ValueError("Bubble charts require at least 2 columns to infer x and y.")
             x = numeric_cols[0] if len(numeric_cols) > 0 else df.columns[0]
             y = numeric_cols[1] if len(numeric_cols) > 1 else df.columns[1]
         

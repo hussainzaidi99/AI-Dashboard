@@ -194,6 +194,11 @@ async def create_dashboard(request: DashboardRequest):
         # Convert widgets to serializable format
         widgets = []
         for widget in dashboard.widgets:
+            # Skip widgets with None figures
+            if widget.figure is None:
+                logger.warning(f"Skipping widget {widget.id} with None figure")
+                continue
+            
             widgets.append({
                 "id": widget.id,
                 "chart_type": widget.chart_type,

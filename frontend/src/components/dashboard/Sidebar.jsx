@@ -9,16 +9,18 @@ import {
     Info,
     MessageSquare,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    ChevronLeft,
+    Menu
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const SidebarItem = ({ icon: Icon, label, to }) => (
+const SidebarItem = ({ icon: Icon, label, to, isCollapsed }) => (
     <NavLink
         to={to}
         className={({ isActive }) => `
-            w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group
+            w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-4 py-3 rounded-xl transition-all duration-200 group
             ${isActive
                 ? 'bg-white text-black font-bold shadow-[0_0_15px_rgba(255,255,255,0.1)]'
                 : 'text-muted-foreground hover:bg-white/5 hover:text-foreground shadow-none'
@@ -26,19 +28,18 @@ const SidebarItem = ({ icon: Icon, label, to }) => (
         `}
     >
         <div className="flex items-center gap-3">
-            <Icon size={20} className="group-hover:text-foreground transition-colors" />
-            <span className="font-medium">{label}</span>
+            <Icon size={isCollapsed ? 24 : 20} className="group-hover:text-foreground transition-colors" />
+            {!isCollapsed && <span className="font-medium text-sm">{label}</span>}
         </div>
-        <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+        {!isCollapsed && <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
     </NavLink>
 );
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     const { logout } = useAuth();
     const menuItems = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, to: '/dashboard' },
         { id: 'upload', label: 'Data Upload', icon: Upload, to: '/upload' },
-        { id: 'analysis', label: 'Visual Analysis', icon: BarChart3, to: '/analysis' },
         { id: 'intelligence', label: 'AI Insights', icon: PieChart, to: '/intelligence' },
         { id: 'raw-data', label: 'Raw Data', icon: Database, to: '/data' },
     ];
@@ -49,15 +50,25 @@ const Sidebar = () => {
     ];
 
     return (
-        <aside className="w-64 h-full flex flex-col bg-background/50 backdrop-blur-xl border-r border-white/10 z-20">
-            <div className="p-6">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} h-full flex flex-col bg-[#050505]/95 backdrop-blur-3xl border-r border-white/5 z-20 transition-all duration-300`}>
+            {/* Toggle Button */}
+            <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-110 transition-all z-30"
+            >
+                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+
+            <div className={`p-6 ${isCollapsed ? 'px-4' : ''}`}>
+                <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center mb-6' : 'mb-8'}`}>
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.1)] shrink-0">
                         <BarChart3 className="text-black" size={24} strokeWidth={2.5} />
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                        AI Analytics
-                    </h1>
+                    {!isCollapsed && (
+                        <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent truncate">
+                            AI Analytics
+                        </h1>
+                    )}
                 </div>
 
                 <nav className="space-y-2">
@@ -67,28 +78,30 @@ const Sidebar = () => {
                             icon={item.icon}
                             label={item.label}
                             to={item.to}
+                            isCollapsed={isCollapsed}
                         />
                     ))}
                 </nav>
             </div>
 
-            <div className="mt-auto p-6 space-y-2">
-                <div className="h-px bg-white/10 my-4" />
+            <div className={`mt-auto p-6 ${isCollapsed ? 'px-4' : ''} space-y-2`}>
+                <div className="h-px bg-white/5 my-4" />
                 {footerItems.map((item) => (
                     <SidebarItem
                         key={item.id}
                         icon={item.icon}
                         label={item.label}
                         to={item.to}
+                        isCollapsed={isCollapsed}
                     />
                 ))}
 
                 <button
                     onClick={logout}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 transition-all duration-200 mt-4 group"
+                    className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-200 mt-4 group`}
                 >
                     <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-                    <span className="font-medium">Logout Session</span>
+                    {!isCollapsed && <span className="font-medium text-sm">Logout Session</span>}
                 </button>
 
                 <div className="mt-8 p-4 rounded-2xl glass-card text-xs">

@@ -1,43 +1,50 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Maximize2, Download, Info } from 'lucide-react';
 
-// Load Plotly dynamically to avoid bundling issues
-let Plotly = null;
-if (typeof window !== 'undefined') {
-    import('plotly.js-dist-min').then(module => {
-        Plotly = module.default;
-    });
-}
-
 const VizWidget = ({ config, title, description, loading, error }) => {
+    const [plotlyInstance, setPlotlyInstance] = useState(null);
     const plotRef = useRef(null);
     const plotInitialized = useRef(false);
+
+    // Dynamic loading of Plotly
+    useEffect(() => {
+        if (!plotlyInstance && typeof window !== 'undefined') {
+            import('plotly.js-dist-min').then(module => {
+                setPlotlyInstance(module.default);
+            });
+        }
+    }, [plotlyInstance]);
 
     // Memoize Plotly layout to maintain performance with dark theme
     const plotlyLayout = useMemo(() => {
         if (!config || !config.layout) return {};
 
+        const isIndicator = config.data?.[0]?.type === 'indicator';
+
         return {
             ...config.layout,
+            title: '', // Remove internal title
             autosize: true,
-            paper_bgcolor: 'rgba(15,20,35,0.95)',
-            plot_bgcolor: 'rgba(25,30,45,0.9)',
+            paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
+            plot_bgcolor: 'rgba(25,30,45,0.4)', // Subtler plot area
             font: {
                 family: "'Segoe UI', 'Roboto', 'Inter', system-ui, sans-serif",
-                color: 'rgba(220,220,230,0.9)',
-                size: 12
+                color: 'rgba(220,220,230,0.8)',
+                size: isIndicator ? 12 : 10
             },
-            margin: { l: 60, r: 40, t: 60, b: 60 },
-            showlegend: config.layout.showlegend ?? true,
+            margin: isIndicator
+                ? { l: 20, r: 20, t: 30, b: 20 }
+                : { l: 40, r: 10, t: 10, b: 30 }, // Tightened margins for dense grid
+            showlegend: config.layout.showlegend ?? (!isIndicator),
             legend: {
                 orientation: 'h',
-                y: -0.15,
+                y: -0.2,
                 x: 0.5,
                 xanchor: 'center',
                 bgcolor: 'rgba(25,30,45,0.8)',
                 bordercolor: 'rgba(100,120,160,0.3)',
                 borderwidth: 1,
-                font: { size: 11, color: 'rgba(200,200,220,0.9)' }
+                font: { size: 9, color: 'rgba(200,200,220,0.9)' }
             },
             hovermode: 'x unified',
             transition: {
@@ -63,7 +70,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
 
     // Use native Plotly.js API instead of react-plotly.js
     useEffect(() => {
-        if (!plotRef.current || !Plotly || !hasValidData || loading || error) {
+        if (!plotRef.current || !plotlyInstance || !hasValidData || loading || error) {
             return;
         }
 
@@ -71,7 +78,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
             try {
                 if (!plotInitialized.current) {
                     // Initial plot creation with smooth animation
-                    await Plotly.newPlot(
+                    await plotlyInstance.newPlot(
                         plotRef.current,
                         plotlyData,
                         plotlyLayout,
@@ -89,7 +96,7 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                     plotInitialized.current = true;
                 } else {
                     // Update existing plot with animation
-                    await Plotly.react(
+                    await plotlyInstance.react(
                         plotRef.current,
                         plotlyData,
                         plotlyLayout,
@@ -109,55 +116,55 @@ const VizWidget = ({ config, title, description, loading, error }) => {
 
         // Cleanup on unmount
         return () => {
-            if (plotRef.current && Plotly) {
-                Plotly.purge(plotRef.current);
+            if (plotRef.current && plotlyInstance) {
+                plotlyInstance.purge(plotRef.current);
                 plotInitialized.current = false;
             }
         };
-    }, [plotlyData, plotlyLayout, hasValidData, loading, error]);
+    }, [plotlyInstance, plotlyData, plotlyLayout, hasValidData, loading, error]);
 
     // Handle window resize
     useEffect(() => {
-        if (!plotRef.current || !Plotly || !plotInitialized.current) {
+        if (!plotRef.current || !plotlyInstance || !plotInitialized.current) {
             return;
         }
 
         const handleResize = () => {
-            if (plotRef.current && Plotly) {
-                Plotly.Plots.resize(plotRef.current);
+            if (plotRef.current && plotlyInstance) {
+                plotlyInstance.Plots.resize(plotRef.current);
             }
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [plotlyInstance]);
 
     return (
-        <div className="glass-card rounded-[2.5rem] p-8 flex flex-col h-full group hover:shadow-[0_8px_40px_rgba(59,130,246,0.2)] transition-all duration-500 bg-gradient-to-br from-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-slate-700/30">
+        <div className="glass-card rounded-2xl p-4 flex flex-col h-full group hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] transition-all duration-500 bg-gradient-to-br from-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-slate-700/30">
             {/* Widget Header with Dark Theme */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex-1">
-                    <h3 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                    <h3 className="text-base font-bold tracking-tight text-white/90">
                         {title || 'Data Visualization'}
                     </h3>
-                    {description && <p className="text-sm text-slate-400 mt-1 font-medium">{description}</p>}
+                    {description && <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{description}</p>}
                 </div>
 
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-blue-400/20">
+                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
                         <Info size={18} />
                     </button>
-                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/20 hover:from-emerald-500/30 hover:to-green-600/30 text-emerald-300 hover:text-emerald-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-emerald-400/20">
+                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
                         <Download size={18} />
                     </button>
-                    <button className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 hover:from-purple-500/30 hover:to-pink-600/30 text-purple-300 hover:text-purple-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-purple-400/20">
+                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
                         <Maximize2 size={18} />
                     </button>
                 </div>
             </div>
 
             {/* Premium Dark Content Section */}
-            <div className="flex-1 relative min-h-[300px] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/20">
+            <div className="flex-1 relative h-[200px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/20">
                 {loading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
                         <div className="relative w-16 h-16">
@@ -187,7 +194,6 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                     <div
                         ref={plotRef}
                         className="w-full h-full animate-in fade-in duration-700"
-                        style={{ minHeight: '300px' }}
                     />
                 ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center">
@@ -202,12 +208,12 @@ const VizWidget = ({ config, title, description, loading, error }) => {
             </div>
 
             {/* Dark Theme Footer */}
-            <div className="mt-6 pt-6 border-t border-slate-700/30 flex items-center justify-between text-xs font-semibold tracking-widest text-slate-400">
+            <div className="mt-6 pt-6 border-t border-slate-700/30 flex items-center justify-between text-[10px] font-bold tracking-[0.2em] text-white/30">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg" />
-                    <span>REAL-TIME SYNC</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
+                    <span>SYSTEM ANALYTICS HUB</span>
                 </div>
-                <span className="text-right">POWERED BY PLOTLY</span>
+                <span className="text-right">HDA-CORE 1.0</span>
             </div>
         </div>
     );

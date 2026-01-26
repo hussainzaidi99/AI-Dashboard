@@ -25,5 +25,13 @@ export const aiApi = {
             sheet_index: sheetIndex
         });
         return response.data;
+    },
+
+    suggestQueries: async (fileId, sheetIndex = 0) => {
+        const response = await apiClient.post('/ai/suggest-queries', {
+            file_id: fileId,
+            sheet_index: sheetIndex
+        });
+        return response.data;
     }
 };

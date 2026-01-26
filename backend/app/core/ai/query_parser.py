@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 import re
+import difflib
 
 from .llm_client import LLMClient, get_llm_client
 from .conversation_manager import ConversationManager, get_conversation_manager
@@ -38,7 +39,7 @@ class ParsedQuery:
     columns: List[str]
     filters: Dict[str, Any]
     aggregations: Dict[str, str]  # column -> agg_function
-    groupby: Optional[str]
+    groupby: List[str]
     sort_by: Optional[str]
     limit: Optional[int]
     time_range: Optional[Dict[str, Any]]
@@ -84,13 +85,18 @@ class QueryParser:
         
         # Chart type keywords
         self.chart_keywords = {
-            "bar": ["bar", "bars", "bar chart"],
-            "line": ["line", "lines", "line chart", "trend"],
-            "scatter": ["scatter", "scatter plot", "points"],
-            "pie": ["pie", "pie chart", "proportion"],
-            "histogram": ["histogram", "distribution"],
+            "bar": ["bar", "bars", "bar chart", "column chart"],
+            "line": ["line", "lines", "line chart", "trend", "time series"],
+            "pie": ["pie", "pie chart", "proportion", "percentage"],
+            "donut": ["donut", "donut chart", "ring chart"],
+            "histogram": ["histogram", "distribution", "hist"],
             "box": ["box", "box plot", "boxplot"],
-            "heatmap": ["heatmap", "heat map", "correlation"],
+            "violin": ["violin", "violin plot"],
+            "area": ["area", "area chart", "stacked area"],
+            "bubble": ["bubble", "bubble chart"],
+            "sunburst": ["sunburst", "sunburst chart", "circular tree"],
+            "treemap": ["treemap", "tree map", "hierarchical rectangles"],
+            "correlation_heatmap": ["correlation", "heatmap", "correlation matrix", "relationship map"]
         }
     
     async def parse_query(
@@ -204,13 +210,10 @@ Your task is to:
 4. Determine grouping, aggregation, and filtering requirements
 
 CRITICAL INSTRUCTIONS:
-- For chart type detection: Look for keywords like "bar", "line", "scatter", "pie", "histogram", "heatmap", "box"
-- For aggregation detection: Look for "by" or "per" keywords to identify grouping columns
-- For column extraction: Match mentioned column names EXACTLY as they appear in the dataset
-- If query says "show me X by Y", then X and Y are the columns, Y is the groupby
-- If query says "X as a bar chart", then "bar" is the chart type
-- Always infer aggregations for numeric columns when grouping is specified
-- Be very strict about matching column names - use only columns that exist in the dataset
+- For chart type detection: Look for keywords like "bar", "line", "pie", "histogram", "box"
+- For semantic mapping: Match mentioned terms to existing columns based on meaning (e.g., "earnings" -> "Revenue", "turnover" -> "Sales").
+- For column extraction: Match mentioned column names as closely as possible to those in the dataset.
+- Always infer aggregations for numeric columns when grouping is specified.
 - For "by" keyword queries like "age and purchase_value by user_id", extract:
   - columns: all mentioned columns
   - groupby: the column after "by"
@@ -223,34 +226,32 @@ User Query: "{query}"
 Analyze this query and extract:
 1. What data columns the user wants to see (extract column names that match exactly with dataset)
 2. How they want to group or aggregate the data (detect "by" keyword)
-3. What type of chart would best represent this (bar, line, scatter, pie, histogram, box, heatmap)
+3. What type of chart would best represent this (bar, line, pie, histogram, box)
 4. Any filters, sorting, or limits mentioned
 
 Return ONLY valid JSON (no markdown, no extra text):
 {{
     "intent": "visualize",
-    "chart_type": "bar|line|scatter|pie|histogram|box|heatmap|null",
+    "chart_type": "bar|line|pie|histogram|box|null",
     "columns": ["column1", "column2"],
     "filters": {{}},
     "aggregations": {{"column_name": "sum|mean|count|max|min"}},
-    "groupby": "column_name or null",
+    "groupby": ["column_name", "column_name"],
     "sort_by": "column_name or null",
     "limit": null,
     "confidence": 0.0-1.0
 }}
 
 PARSING EXAMPLES:
-Query: "show me 'age' and 'purchase_value' by 'user_id' as a bar chart"
-Response: {{"intent": "visualize", "chart_type": "bar", "columns": ["age", "purchase_value", "user_id"], "aggregations": {{"age": "sum", "purchase_value": "sum"}}, "groupby": "user_id", "confidence": 0.95}}
 
-Query: "Show me sales by region"
-Response: {{"intent": "visualize", "chart_type": "bar", "columns": ["region", "sales"], "aggregations": {{"sales": "sum"}}, "groupby": "region", "confidence": 0.9}}
+Query: "plot my monthly earnings over time"
+Response: {{"intent": "trend", "chart_type": "line", "columns": ["Date", "Revenue"], "aggregations": {{"Revenue": "sum"}}, "groupby": "Date", "confidence": 0.92}}
 
-Query: "Plot revenue trend over time as a line chart"
-Response: {{"intent": "trend", "chart_type": "line", "columns": ["time", "revenue"], "aggregations": {{}}, "groupby": null, "confidence": 0.95}}
+Query: "distribution of ages for our customers"
+Response: {{"intent": "distribution", "chart_type": "histogram", "columns": ["age"], "aggregations": {{}}, "groupby": [], "confidence": 0.95}}
 
-Query: "Compare product sales as a pie chart"
-Response: {{"intent": "compare", "chart_type": "pie", "columns": ["product", "sales"], "aggregations": {{"sales": "sum"}}, "groupby": "product", "confidence": 0.88}}
+Query: "compare sales performance across different departments"
+Response: {{"intent": "compare", "chart_type": "bar", "columns": ["department", "sales"], "aggregations": {{"sales": "sum"}}, "groupby": ["department"], "confidence": 0.9}}
 
 Now carefully parse this user query: "{query}"
 Return ONLY the JSON response, nothing else."""
@@ -265,21 +266,67 @@ Return ONLY the JSON response, nothing else."""
                     "columns": ["string"],
                     "filters": {},
                     "aggregations": {},
-                    "groupby": "string or null",
+                    "groupby": ["string"],
                     "sort_by": "string or null",
                     "limit": "number or null",
                     "confidence": "float"
                 }
             )
             
+            # Extract results
+            intent_str = response.get("intent", "visualize")
+            chart_type = response.get("chart_type")
+            suggested_cols = response.get("columns", [])
+            groupby = response.get("groupby")
+            aggregations = response.get("aggregations", {})
+            
+            # Post-process columns with fuzzy matching fallback
+            actual_columns = df.columns.tolist()
+            mapped_columns = []
+            
+            def get_best_match(col_name):
+                # 1. Exact match (case insensitive)
+                for actual in actual_columns:
+                    if col_name.lower() == actual.lower():
+                        return actual
+                
+                # 2. Fuzzy match
+                matches = difflib.get_close_matches(col_name, actual_columns, n=1, cutoff=0.7)
+                if matches:
+                    return matches[0]
+                
+                return None
+
+            for col in suggested_cols:
+                match = get_best_match(col)
+                if match:
+                    mapped_columns.append(match)
+            
+            # Map groupby and aggregations keys as well
+            mapped_groupby = []
+            suggested_groupby = response.get("groupby", [])
+            if isinstance(suggested_groupby, str):
+                suggested_groupby = [suggested_groupby]
+            
+            for g in suggested_groupby:
+                match = get_best_match(g)
+                if match:
+                    mapped_groupby.append(match)
+
+            new_aggs = {}
+            for col, agg in aggregations.items():
+                col_match = get_best_match(col)
+                if col_match:
+                    new_aggs[col_match] = agg
+            
             # Convert to ParsedQuery
             return ParsedQuery(
-                intent=QueryIntent(response.get("intent", "visualize")),
-                chart_type=response.get("chart_type"),
-                columns=response.get("columns", []),
+                intent=QueryIntent(intent_str),
+                chart_type=chart_type,
+                columns=mapped_columns,
                 filters=response.get("filters", {}),
-                aggregations=response.get("aggregations", {}),
-                groupby=response.get("groupby"),
+                aggregations=new_aggs,
+                groupby=mapped_groupby,
                 sort_by=response.get("sort_by"),
                 limit=response.get("limit"),
                 time_range=None,
@@ -345,13 +392,18 @@ Return ONLY the JSON response, nothing else."""
         query_lower = query.lower()
         
         chart_patterns = {
-            "bar": ["bar chart", "bar graph", "bars", " bar ", "barplot"],
+            "bar": ["bar chart", "bar graph", "bars", " bar ", "barplot", "column chart"],
             "line": ["line chart", "line graph", "line plot", "trend"],
-            "scatter": ["scatter plot", "scatter chart", "scatterplot"],
-            "pie": ["pie chart", "pie graph", "donut"],
+            "pie": ["pie chart", "pie graph"],
+            "donut": ["donut chart", "donut graph", "donut", "ring chart"],
             "histogram": ["histogram", "distribution", "hist"],
             "box": ["box plot", "boxplot", "box-and-whisker"],
-            "heatmap": ["heatmap", "heat map", "correlation matrix"],
+            "violin": ["violin plot", "violinplot", "violin"],
+            "area": ["area chart", "area graph", "stacked area"],
+            "bubble": ["bubble chart", "bubble graph", "bubbles"],
+            "sunburst": ["sunburst chart", "sunburst graph", "sunburst"],
+            "treemap": ["treemap", "tree map"],
+            "correlation_heatmap": ["correlation heatmap", "correlation matrix", "heatmap"],
         }
         
         for chart_type, keywords in chart_patterns.items():
@@ -425,42 +477,41 @@ Return ONLY the JSON response, nothing else."""
         
         return aggregations
     
-    def _detect_groupby(self, query: str, df: pd.DataFrame) -> Optional[str]:
-        """Detect groupby column - improved to handle quoted names and exact matching"""
+    def _detect_groupby(self, query: str, df: pd.DataFrame) -> List[str]:
+        """Detect groupby columns - improved to handle multiple columns after 'by'"""
         import re
         
         groupby_keywords = ["by", "per", "for each", "group by"]
         query_lower = query.lower()
+        found_groups = []
         
         for keyword in groupby_keywords:
             if keyword in query_lower:
-                # Split by keyword and get the part after it
                 parts = query_lower.split(keyword)
                 if len(parts) > 1:
-                    after_keyword = parts[-1].strip()  # Get the last occurrence
+                    after_keyword = parts[-1].strip()
                     
-                    # First, check if there's a quoted column name right after
-                    quoted_pattern = r"['\"]([^'\"]+)['\"]"
-                    quoted_matches = re.findall(quoted_pattern, after_keyword)
-                    if quoted_matches:
-                        potential_col = quoted_matches[0].lower()
-                        for col in df.columns:
-                            if potential_col == col.lower():
-                                return col
+                    # Look for columns until "as", "using", "with" or other keywords
+                    cutoff_keywords = ["as", "using", "with", "where", "sort", "limit"]
+                    for ck in cutoff_keywords:
+                        if ck in after_keyword:
+                            after_keyword = after_keyword.split(ck)[0].strip()
                     
-                    # Then check for unquoted column name (first word after keyword)
-                    words = after_keyword.replace(',', ' ').replace('as', ' ').split()
-                    for word in words:
-                        word_clean = word.strip()
-                        if not word_clean:
+                    # Split by "and" or commas
+                    potential_names = re.split(r'[,]| and ', after_keyword)
+                    
+                    for name in potential_names:
+                        name_clean = name.strip().strip("'\"")
+                        if not name_clean:
                             continue
                         
-                        # Exact match
+                        # Match against actual columns
                         for col in df.columns:
-                            if word_clean == col.lower() or word_clean == col.lower().replace('_', ''):
-                                return col
+                            if name_clean == col.lower() or name_clean.replace(' ', '_') == col.lower():
+                                if col not in found_groups:
+                                    found_groups.append(col)
         
-        return None
+        return found_groups
     
     def _detect_filters(self, query: str, df: pd.DataFrame) -> Dict[str, Any]:
         """Detect filter conditions"""
@@ -545,14 +596,17 @@ Return ONLY the JSON response, nothing else."""
         
         elif parsed_query.intent == QueryIntent.CORRELATE:
             if len(numeric_cols) >= 2:
-                return "scatter"
-            return "heatmap"
+                return "line"
+            return "bar"
         
         elif parsed_query.intent == QueryIntent.COMPARE:
             return "bar"
         
+        elif len(numeric_cols) >= 3:
+            return "pie"
+        
         elif len(numeric_cols) == 2:
-            return "scatter"
+            return "line"
         
         elif len(numeric_cols) == 1 and len(categorical_cols) == 1:
             return "bar"

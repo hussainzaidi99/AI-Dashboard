@@ -64,7 +64,6 @@ function App() {
               <Routes>
                 <Route path="/dashboard" element={<Overview />} />
                 <Route path="/upload" element={<DataUpload />} />
-                <Route path="/analysis" element={<VisualAnalysis />} />
                 <Route path="/intelligence" element={<AIIntelligence />} />
                 <Route path="/data" element={<RawData />} />
                 <Route path="/pricing" element={<div className="p-10 text-center"><h2 className="text-3xl font-bold">Pricing Plans</h2><p className="text-muted-foreground mt-2">Coming Soon...</p></div>} />

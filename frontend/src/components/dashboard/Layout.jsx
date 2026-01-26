@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import LightRays from '../backgrounds/LightRays';
 
 const Layout = ({ children }) => {
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     return (
         <div className="flex h-screen w-screen bg-[#000000] text-foreground overflow-hidden font-sans selection:bg-white/20">
@@ -22,10 +23,10 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Sidebar */}
-            <Sidebar />
+            <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col relative z-10 overflow-hidden">
+            <main className={`flex-1 flex flex-col relative z-10 overflow-hidden transition-all duration-300 ${isCollapsed ? 'pl-0' : ''}`}>
                 <Navbar />
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10 custom-scrollbar">

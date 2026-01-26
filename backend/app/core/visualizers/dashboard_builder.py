@@ -194,19 +194,11 @@ class DashboardBuilder:
     def create_auto_dashboard(
         self,
         df: pd.DataFrame,
-        title: str = "Auto Dashboard",
-        max_charts: int = 6
+        title: str = "Intelligence Core Dashboard",
+        max_charts: int = 12
     ) -> VizDashboard:
         """
-        Automatically create dashboard based on data
-        
-        Args:
-            df: pandas DataFrame
-            title: Dashboard title
-            max_charts: Maximum number of charts to create
-        
-        Returns:
-            Dashboard with auto-generated widgets
+        Automatically create a production-grade dashboard based on data
         """
         dashboard = self.create_dashboard(title=title)
         
@@ -214,87 +206,152 @@ class DashboardBuilder:
         categorical_cols = df.select_dtypes(exclude=['number', 'datetime']).columns.tolist()
         datetime_cols = df.select_dtypes(include=['datetime']).columns.tolist()
         
+        # Priority mapping for common column names
+        priority_keywords = ["revenue", "sales", "profit", "amount", "total", "count", "value"]
+        
+        def score_column(col):
+            col_lower = col.lower()
+            return sum(2 for k in priority_keywords if k in col_lower)
+            
+        sorted_numeric = sorted(numeric_cols, key=score_column, reverse=True)
+        sorted_categorical = sorted(categorical_cols, key=lambda c: df[c].nunique()) # Low cardinality first
+
         charts_added = 0
         
-        # 1. Add correlation heatmap if multiple numeric columns
-        if len(numeric_cols) >= 2 and charts_added < max_charts:
+        # 1. Main Global Trends (Multi-line or Line)
+        if datetime_cols and sorted_numeric:
+            try:
+                if len(sorted_numeric) >= 2:
+                    self.add_widget(
+                        dashboard=dashboard,
+                        chart_type='multi_line',
+                        df=df,
+                        x=datetime_cols[0],
+                        y_columns=sorted_numeric[:3],
+                        title='Multi-dimensional Performance Trend',
+                        description="Comparative time-series analysis"
+                    )
+                else:
+                    self.add_widget(
+                        dashboard=dashboard,
+                        chart_type='line',
+                        df=df,
+                        x=datetime_cols[0],
+                        y=sorted_numeric[0],
+                        title=f'Global {sorted_numeric[0]} Performance',
+                        description="Continuous time-series analysis"
+                    )
+                charts_added += 1
+            except: pass
+
+        # 1b. Performance Gauge (Critical for Production Look)
+        if sorted_numeric:
+            try:
+                # Calculate simple score (last value vs mean)
+                latest_val = df[sorted_numeric[0]].iloc[-1]
+                avg_val = df[sorted_numeric[0]].mean()
+                score = min(100, int((latest_val / avg_val) * 70)) if avg_val > 0 else 0
+                
+                self.add_widget(
+                    dashboard=dashboard,
+                    chart_type='gauge',
+                    df=df,
+                    value=score,
+                    title=f'{sorted_numeric[0]} Efficiency',
+                    description="Real-time performance index"
+                )
+                charts_added += 1
+            except: pass
+
+        # 2. Key Categorical Breakdowns (Sunburst/Donut)
+        if sorted_categorical and sorted_numeric:
+            # Donut for first category
+            try:
+                self.add_widget(
+                    dashboard=dashboard,
+                    chart_type='donut',
+                    df=df.groupby(sorted_categorical[0])[sorted_numeric[0]].sum().reset_index(),
+                    x=sorted_categorical[0],
+                    y=sorted_numeric[0],
+                    title=f'{sorted_numeric[0]} by {sorted_categorical[0]}',
+                    description="Proportional distribution"
+                )
+                charts_added += 1
+            except: pass
+
+            # Treemap for second category
+            if len(sorted_categorical) >= 2:
+                try:
+                    self.add_widget(
+                        dashboard=dashboard,
+                        chart_type='treemap',
+                        df=df,
+                        path=sorted_categorical[:2],
+                        y=sorted_numeric[0],
+                        title='Hierarchical Data Mapping',
+                        description='Nested structure analysis'
+                    )
+                    charts_added += 1
+                except: pass
+
+        # 3. Correlation Matrix (Production Requirement)
+        if len(sorted_numeric) >= 3:
             try:
                 fig = self.chart_factory.create_correlation_matrix(df)
-                widget = VizWidget(
-                    id=f"widget_{charts_added + 1}",
-                    chart_type='heatmap',
-                    figure=fig,
-                    title='Correlation Matrix'
-                )
-                dashboard.widgets.append(widget)
-                charts_added += 1
-            except Exception as e:
-                self.logger.debug(f"Failed to add correlation matrix to auto-dashboard: {str(e)}")
-        
-        # 2. Add distributions for numeric columns
-        for col in numeric_cols[:min(2, max_charts - charts_added)]:
+                if fig:
+                    dashboard.widgets.append(VizWidget(
+                        id=f"widget_{charts_added + 1}",
+                        chart_type='correlation_heatmap',
+                        figure=fig,
+                        title='Metric Correlation Matrix',
+                        description='Deep pattern relationship analysis'
+                    ))
+                    charts_added += 1
+            except: pass
+
+        # 4. Statistical Distributions (Histograms/Box)
+        for col in sorted_numeric[:2]:
+            if charts_added >= max_charts: break
             try:
                 self.add_widget(
                     dashboard=dashboard,
                     chart_type='histogram',
                     df=df,
                     x=col,
-                    title=f'Distribution: {col}'
+                    title=f'Statistical Density: {col}'
                 )
                 charts_added += 1
-            except Exception as e:
-                self.logger.debug(f"Failed to add distribution to auto-dashboard: {str(e)}")
-        
-        # 3. Add time series if datetime column exists
-        if datetime_cols and numeric_cols and charts_added < max_charts:
+            except: pass
+            
             try:
                 self.add_widget(
                     dashboard=dashboard,
-                    chart_type='line',
+                    chart_type='box',
                     df=df,
-                    x=datetime_cols[0],
-                    y=numeric_cols[0],
-                    title=f'{numeric_cols[0]} over Time'
+                    y=col,
+                    title=f'Quartile Analysis: {col}'
                 )
                 charts_added += 1
-            except Exception as e:
-                self.logger.debug(f"Failed to add time series to auto-dashboard: {str(e)}")
-        
-        # 4. Add categorical vs numeric comparisons
-        if categorical_cols and numeric_cols and charts_added < max_charts:
-            for cat_col in categorical_cols[:min(2, max_charts - charts_added)]:
+            except: pass
+
+        # 6. Additional Rankings (Top N Bar)
+        if sorted_categorical and sorted_numeric:
+            for cat in sorted_categorical[1:3]:
+                if charts_added >= max_charts: break
                 try:
-                    # Aggregate data
-                    agg_df = df.groupby(cat_col)[numeric_cols[0]].mean().reset_index()
-                    
+                    top_df = df.groupby(cat)[sorted_numeric[0]].sum().sort_values(ascending=False).head(10).reset_index()
                     self.add_widget(
                         dashboard=dashboard,
                         chart_type='bar',
-                        df=agg_df,
-                        x=cat_col,
-                        y=numeric_cols[0],
-                        title=f'{numeric_cols[0]} by {cat_col}'
+                        df=top_df,
+                        x=cat,
+                        y=sorted_numeric[0],
+                        title=f'Top 10 {cat} by {sorted_numeric[0]}'
                     )
                     charts_added += 1
-                except Exception as e:
-                    self.logger.debug(f"Failed to add categorical comparison to auto-dashboard: {str(e)}")
-        
-        # 5. Add scatter plot if multiple numeric columns
-        if len(numeric_cols) >= 2 and charts_added < max_charts:
-            try:
-                self.add_widget(
-                    dashboard=dashboard,
-                    chart_type='scatter',
-                    df=df,
-                    x=numeric_cols[0],
-                    y=numeric_cols[1],
-                    title=f'{numeric_cols[1]} vs {numeric_cols[0]}'
-                )
-                charts_added += 1
-            except Exception as e:
-                self.logger.debug(f"Failed to add scatter plot to auto-dashboard: {str(e)}")
-        
-        self.logger.info(f"Auto-generated dashboard with {charts_added} widgets")
+                except: pass
+
+        self.logger.info(f"Auto-generated production dashboard with {charts_added} widgets")
         return dashboard
     
     def create_summary_dashboard(
