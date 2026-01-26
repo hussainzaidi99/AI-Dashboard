@@ -199,6 +199,7 @@ class DashboardBuilder:
     ) -> VizDashboard:
         """
         Automatically create a production-grade dashboard based on data
+        Ensures diverse representation and no duplicate metrics.
         """
         dashboard = self.create_dashboard(title=title)
         
@@ -207,149 +208,142 @@ class DashboardBuilder:
         datetime_cols = df.select_dtypes(include=['datetime']).columns.tolist()
         
         # Priority mapping for common column names
-        priority_keywords = ["revenue", "sales", "profit", "amount", "total", "count", "value"]
+        priority_keywords = ["revenue", "sales", "profit", "amount", "total", "count", "value", "sessions", "users", "growth"]
         
         def score_column(col):
             col_lower = col.lower()
-            return sum(2 for k in priority_keywords if k in col_lower)
+            return sum(5 if k in col_lower else 0 for k in priority_keywords)
             
         sorted_numeric = sorted(numeric_cols, key=score_column, reverse=True)
         sorted_categorical = sorted(categorical_cols, key=lambda c: df[c].nunique()) # Low cardinality first
 
         charts_added = 0
+        used_metrics = set()
         
-        # 1. Main Global Trends (Multi-line or Line)
-        if datetime_cols and sorted_numeric:
-            try:
-                if len(sorted_numeric) >= 2:
-                    self.add_widget(
-                        dashboard=dashboard,
-                        chart_type='multi_line',
-                        df=df,
-                        x=datetime_cols[0],
-                        y_columns=sorted_numeric[:3],
-                        title='Multi-dimensional Performance Trend',
-                        description="Comparative time-series analysis"
-                    )
-                else:
-                    self.add_widget(
-                        dashboard=dashboard,
-                        chart_type='line',
-                        df=df,
-                        x=datetime_cols[0],
-                        y=sorted_numeric[0],
-                        title=f'Global {sorted_numeric[0]} Performance',
-                        description="Continuous time-series analysis"
-                    )
-                charts_added += 1
-            except: pass
-
-        # 1b. Performance Gauge (Critical for Production Look)
+        # 1. Main Global Trends (TRIPLE AREA comparison for requested features) - TOP PRIORITY
         if sorted_numeric:
-            try:
-                # Calculate simple score (last value vs mean)
-                latest_val = df[sorted_numeric[0]].iloc[-1]
-                avg_val = df[sorted_numeric[0]].mean()
-                score = min(100, int((latest_val / avg_val) * 70)) if avg_val > 0 else 0
+            y_cols = sorted_numeric[:3]
+            x_col = datetime_cols[0] if datetime_cols else None
+            
+            # If no date column, use index as a sequence
+            plot_df = df.copy()
+            if not x_col:
+                plot_df = plot_df.reset_index()
+                x_col = 'index'
                 
-                self.add_widget(
-                    dashboard=dashboard,
-                    chart_type='gauge',
-                    df=df,
-                    value=score,
-                    title=f'{sorted_numeric[0]} Efficiency',
-                    description="Real-time performance index"
-                )
-                charts_added += 1
-            except: pass
-
-        # 2. Key Categorical Breakdowns (Sunburst/Donut)
-        if sorted_categorical and sorted_numeric:
-            # Donut for first category
             try:
                 self.add_widget(
                     dashboard=dashboard,
-                    chart_type='donut',
-                    df=df.groupby(sorted_categorical[0])[sorted_numeric[0]].sum().reset_index(),
-                    x=sorted_categorical[0],
-                    y=sorted_numeric[0],
-                    title=f'{sorted_numeric[0]} by {sorted_categorical[0]}',
-                    description="Proportional distribution"
+                    chart_type='triple_area',
+                    df=plot_df.sort_values(x_col).head(100),
+                    x=x_col,
+                    y=y_cols,
+                    title='Neural Feature Comparison',
+                    description=f"Comparison of {', '.join(y_cols)}"
                 )
+                for col in y_cols: used_metrics.add(col)
                 charts_added += 1
-            except: pass
+            except Exception as e:
+                self.logger.warning(f"Failed to add triple_area widget: {str(e)}")
 
-            # Treemap for second category
-            if len(sorted_categorical) >= 2:
+        # 2. Additional Trends (Metric Area Chart)
+        if datetime_cols and len(sorted_numeric) > 1:
+            for col in sorted_numeric[1:2]: 
+                if charts_added >= max_charts: break
                 try:
                     self.add_widget(
                         dashboard=dashboard,
-                        chart_type='treemap',
-                        df=df,
-                        path=sorted_categorical[:2],
-                        y=sorted_numeric[0],
-                        title='Hierarchical Data Mapping',
-                        description='Nested structure analysis'
+                        chart_type='metric_area',
+                        df=df.sort_values(datetime_cols[0]),
+                        x=datetime_cols[0],
+                        y=col,
+                        title=f'{col} Performance Trace',
+                        description="System optimization trend"
                     )
+                    used_metrics.add(col)
                     charts_added += 1
                 except: pass
 
-        # 3. Correlation Matrix (Production Requirement)
-        if len(sorted_numeric) >= 3:
-            try:
-                fig = self.chart_factory.create_correlation_matrix(df)
-                if fig:
-                    dashboard.widgets.append(VizWidget(
-                        id=f"widget_{charts_added + 1}",
-                        chart_type='correlation_heatmap',
-                        figure=fig,
-                        title='Metric Correlation Matrix',
-                        description='Deep pattern relationship analysis'
-                    ))
-                    charts_added += 1
-            except: pass
 
-        # 4. Statistical Distributions (Histograms/Box)
-        for col in sorted_numeric[:2]:
-            if charts_added >= max_charts: break
-            try:
-                self.add_widget(
-                    dashboard=dashboard,
-                    chart_type='histogram',
-                    df=df,
-                    x=col,
-                    title=f'Statistical Density: {col}'
-                )
-                charts_added += 1
-            except: pass
+        # 3. Key Categorical Breakdowns (Donut & Pie)
+        if sorted_categorical and sorted_numeric and charts_added < max_charts:
+            # Donut for first category, use a numeric that might not be in used_metrics or top one
+            metric_to_use = sorted_numeric[0]
             
             try:
                 self.add_widget(
                     dashboard=dashboard,
-                    chart_type='box',
-                    df=df,
-                    y=col,
-                    title=f'Quartile Analysis: {col}'
+                    chart_type='donut',
+                    df=df.groupby(sorted_categorical[0])[metric_to_use].sum().reset_index(),
+                    x=sorted_categorical[0],
+                    y=metric_to_use,
+                    title=f'{metric_to_use} Proportion by {sorted_categorical[0]}',
+                    description="Contribution Analysis"
                 )
                 charts_added += 1
             except: pass
 
-        # 6. Additional Rankings (Top N Bar)
-        if sorted_categorical and sorted_numeric:
-            for cat in sorted_categorical[1:3]:
+            # Pie for second category if available
+            if len(sorted_categorical) >= 2 and charts_added < max_charts:
+                try:
+                    self.add_widget(
+                        dashboard=dashboard,
+                        chart_type='pie',
+                        df=df.groupby(sorted_categorical[1])[metric_to_use].sum().reset_index(),
+                        x=sorted_categorical[1],
+                        y=metric_to_use,
+                        title=f'{metric_to_use} Breakdown: {sorted_categorical[1]}',
+                        description="Segment distribution"
+                    )
+                    charts_added += 1
+                except: pass
+
+
+        # 5. Statistical Distributions (Frequency Analysis)
+        if sorted_numeric and charts_added < max_charts:
+            # Find a metric that hasn't been used much in detailed ways
+            for col in sorted_numeric:
                 if charts_added >= max_charts: break
                 try:
-                    top_df = df.groupby(cat)[sorted_numeric[0]].sum().sort_values(ascending=False).head(10).reset_index()
+                    self.add_widget(
+                        dashboard=dashboard,
+                        chart_type='histogram',
+                        df=df,
+                        x=col,
+                        title=f'Density Analysis: {col}',
+                        description="Statistical spread"
+                    )
+                    charts_added += 1
+                    break # One histogram is usually enough
+                except: pass
+
+        # 6. Diversity Fallback (Fill up the rest with unique views)
+        for cat in sorted_categorical[2:]:
+            if charts_added >= max_charts: break
+            
+            # Skip high cardinality columns for bar charts (prevents "barcode" charts like in user image)
+            if df[cat].nunique() > 15:
+                continue
+                
+            for col in sorted_numeric:
+                if charts_added >= max_charts: break
+                try:
+                    # Create a bar chart for categorical vs numeric that hasn't been paired yet
+                    top_df = df.groupby(cat)[col].sum().sort_values(ascending=False).head(10).reset_index()
                     self.add_widget(
                         dashboard=dashboard,
                         chart_type='bar',
                         df=top_df,
                         x=cat,
-                        y=sorted_numeric[0],
-                        title=f'Top 10 {cat} by {sorted_numeric[0]}'
+                        y=col,
+                        title=f'Top {cat} by {col}'
                     )
                     charts_added += 1
+                    break
                 except: pass
+
+        self.logger.info(f"Auto-generated production dashboard with {charts_added} widgets (deduplicated)")
+        return dashboard
 
         self.logger.info(f"Auto-generated production dashboard with {charts_added} widgets")
         return dashboard

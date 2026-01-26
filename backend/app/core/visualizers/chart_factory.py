@@ -31,6 +31,8 @@ class ChartType(str, Enum):
     CORRELATION_HEATMAP = "correlation_heatmap"
     GAUGE = "gauge"
     MULTI_LINE = "multi_line"
+    METRIC_AREA = "metric_area"
+    TRIPLE_AREA = "triple_area"
 
 
 class ChartFactory:
@@ -48,13 +50,15 @@ class ChartFactory:
             ChartType.BOX: self.generator.generate_box_plot,
             ChartType.VIOLIN: self.generator.generate_violin_plot,
             ChartType.PIE: self.generator.generate_pie_chart,
-            ChartType.DONUT: self._create_donut_chart,
+            ChartType.DONUT: self.generator.generate_donut_chart,
             ChartType.AREA: self.generator.generate_area_chart,
             ChartType.BUBBLE: self.generator.generate_bubble_chart,
             ChartType.SUNBURST: self.generator.generate_sunburst,
             ChartType.TREEMAP: self.generator.generate_treemap,
             ChartType.GAUGE: self.generator.generate_gauge,
             ChartType.MULTI_LINE: self.create_multi_line,
+            ChartType.METRIC_AREA: self.generator.generate_metric_area_chart,
+            ChartType.TRIPLE_AREA: self.generator.generate_triple_area_chart,
         }
     
     def create(
@@ -141,6 +145,17 @@ class ChartFactory:
             title = self._generate_title(chart_type, x, y)
         
         # Build config
+        options = kwargs.get('options', {}).copy()
+        
+        # Merge other specialized kwargs into options if they aren't standard ChartConfig fields
+        standard_fields = {
+            'color', 'size', 'x_label', 'y_label', 'width', 'height', 
+            'color_palette', 'theme', 'show_legend', 'hover_data', 'options', 'title', 'description'
+        }
+        for k, v in kwargs.items():
+            if k not in standard_fields:
+                options[k] = v
+
         config = ChartConfig(
             chart_type=chart_type,
             x=x,
@@ -156,7 +171,7 @@ class ChartFactory:
             theme=kwargs.get('theme'),
             show_legend=kwargs.get('show_legend', True),
             hover_data=kwargs.get('hover_data'),
-            options=kwargs.get('options', {})
+            options=options
         )
         
         return config

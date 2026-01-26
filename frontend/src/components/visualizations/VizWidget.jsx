@@ -1,220 +1,210 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Maximize2, Download, Info } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Maximize2, Download, Info, X, ExternalLink } from 'lucide-react';
+import PlotlyChart from './PlotlyChart';
 
 const VizWidget = ({ config, title, description, loading, error }) => {
-    const [plotlyInstance, setPlotlyInstance] = useState(null);
-    const plotRef = useRef(null);
-    const plotInitialized = useRef(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
-    // Dynamic loading of Plotly
+    // Body scroll lock and status logging
     useEffect(() => {
-        if (!plotlyInstance && typeof window !== 'undefined') {
-            import('plotly.js-dist-min').then(module => {
-                setPlotlyInstance(module.default);
-            });
+        if (isFullScreen) {
+            document.body.style.overflow = 'hidden';
+            console.log(`[VizWidget] Fullscreen active for: ${title}`);
+        } else {
+            document.body.style.overflow = '';
         }
-    }, [plotlyInstance]);
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isFullScreen, title]);
 
-    // Memoize Plotly layout to maintain performance with dark theme
+    const toggleFullScreen = () => {
+        setIsFullScreen(prev => !prev);
+    };
+
     const plotlyLayout = useMemo(() => {
         if (!config || !config.layout) return {};
-
         const isIndicator = config.data?.[0]?.type === 'indicator';
+        const hasAnnotations = config.layout?.annotations?.length > 0;
 
         return {
             ...config.layout,
-            title: '', // Remove internal title
+            title: '',
             autosize: true,
-            paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
-            plot_bgcolor: 'rgba(25,30,45,0.4)', // Subtler plot area
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
             font: {
-                family: "'Segoe UI', 'Roboto', 'Inter', system-ui, sans-serif",
-                color: 'rgba(220,220,230,0.8)',
-                size: isIndicator ? 12 : 10
+                family: "'Inter', system-ui, sans-serif",
+                color: 'rgba(226, 232, 240, 0.8)',
+                size: config.layout?.font?.size || (isIndicator ? 12 : 10)
             },
-            margin: isIndicator
-                ? { l: 20, r: 20, t: 30, b: 20 }
-                : { l: 40, r: 10, t: 10, b: 30 }, // Tightened margins for dense grid
-            showlegend: config.layout.showlegend ?? (!isIndicator),
+            margin: config.layout?.margin || (isIndicator || hasAnnotations
+                ? { l: 20, r: 20, t: 80, b: 20 }
+                : { l: 40, r: 20, t: 30, b: 40 }),
+            showlegend: config.layout?.showlegend ?? (!isIndicator && !hasAnnotations),
             legend: {
                 orientation: 'h',
-                y: -0.2,
+                y: -0.15,
                 x: 0.5,
                 xanchor: 'center',
-                bgcolor: 'rgba(25,30,45,0.8)',
-                bordercolor: 'rgba(100,120,160,0.3)',
-                borderwidth: 1,
-                font: { size: 9, color: 'rgba(200,200,220,0.9)' }
+                bgcolor: 'transparent',
+                font: { size: 9, color: 'rgba(148, 163, 184, 0.8)' }
             },
-            hovermode: 'x unified',
-            transition: {
-                duration: 500,
-                easing: 'cubic-in-out'
+            hovermode: 'closest',
+            hoverlabel: {
+                bgcolor: '#0f172a',
+                bordercolor: 'rgba(56, 189, 248, 0.2)',
+                font: { color: '#f8fafc', size: 11 },
+                namelength: -1
             }
         };
     }, [config]);
 
-    // Memoize data to prevent unnecessary re-renders
     const plotlyData = useMemo(() => {
-        if (!config || !config.data || !Array.isArray(config.data)) {
-            return [];
-        }
-
-        // Filter out any undefined or null data items
-        const validData = config.data.filter(item => item != null && typeof item === 'object');
-        return validData;
+        if (!config || !config.data) return [];
+        return config.data.filter(Boolean).map(item => {
+            if (item.type === 'bar' || item.type === 'histogram') {
+                return { ...item, marker: { ...item.marker, cornerradius: 8 } };
+            }
+            return item;
+        });
     }, [config]);
 
-    // Don't render Plotly if there's no valid data
     const hasValidData = plotlyData.length > 0;
 
-    // Use native Plotly.js API instead of react-plotly.js
-    useEffect(() => {
-        if (!plotRef.current || !plotlyInstance || !hasValidData || loading || error) {
-            return;
-        }
+    // Custom Legend Component
+    const CustomPieLegend = ({ data, isFull }) => {
+        if (!data?.[0] || data[0].type !== 'pie') return null;
+        const labels = data[0].labels || [];
+        const values = data[0].values || [];
+        const colors = data[0].marker?.colors || [];
+        const total = values.reduce((a, b) => a + b, 0);
 
-        const renderPlot = async () => {
-            try {
-                if (!plotInitialized.current) {
-                    // Initial plot creation with smooth animation
-                    await plotlyInstance.newPlot(
-                        plotRef.current,
-                        plotlyData,
-                        plotlyLayout,
-                        {
-                            displayModeBar: true,
-                            displaylogo: false,
-                            responsive: true,
-                            toImageButtonOptions: {
-                                format: 'png',
-                                width: 1200,
-                                height: 800
-                            }
-                        }
+        return (
+            <div className={`grid ${isFull ? 'grid-cols-2 md:grid-cols-4 gap-6 px-10 pb-10' : 'gap-3 px-6 pb-6'}`}>
+                {labels.map((label, idx) => {
+                    const percentage = total > 0 ? Math.round((values[idx] / total) * 100) : 0;
+                    return (
+                        <div key={idx} className="space-y-1 group/item">
+                            <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[idx] || '#fff' }} />
+                                    <span className="text-slate-400 group-hover/item:text-slate-200 transition-colors">{label}</span>
+                                </div>
+                                <span className="text-slate-500">{percentage}%</span>
+                            </div>
+                            <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    transition={{ duration: 0.8, delay: idx * 0.1 }}
+                                    className="h-full rounded-full opacity-60"
+                                    style={{ backgroundColor: colors[idx] || '#fff' }}
+                                />
+                            </div>
+                        </div>
                     );
-                    plotInitialized.current = true;
-                } else {
-                    // Update existing plot with animation
-                    await plotlyInstance.react(
-                        plotRef.current,
-                        plotlyData,
-                        plotlyLayout,
-                        {
-                            displayModeBar: true,
-                            displaylogo: false,
-                            responsive: true
-                        }
-                    );
-                }
-            } catch (err) {
-                console.error('Plotly rendering error:', err);
-            }
-        };
-
-        renderPlot();
-
-        // Cleanup on unmount
-        return () => {
-            if (plotRef.current && plotlyInstance) {
-                plotlyInstance.purge(plotRef.current);
-                plotInitialized.current = false;
-            }
-        };
-    }, [plotlyInstance, plotlyData, plotlyLayout, hasValidData, loading, error]);
-
-    // Handle window resize
-    useEffect(() => {
-        if (!plotRef.current || !plotlyInstance || !plotInitialized.current) {
-            return;
-        }
-
-        const handleResize = () => {
-            if (plotRef.current && plotlyInstance) {
-                plotlyInstance.Plots.resize(plotRef.current);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [plotlyInstance]);
+                })}
+            </div>
+        );
+    };
 
     return (
-        <div className="glass-card rounded-2xl p-4 flex flex-col h-full group hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] transition-all duration-500 bg-gradient-to-br from-slate-900/80 to-slate-950/90 backdrop-blur-xl border border-slate-700/30">
-            {/* Widget Header with Dark Theme */}
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex-1">
-                    <h3 className="text-base font-bold tracking-tight text-white/90">
-                        {title || 'Data Visualization'}
-                    </h3>
-                    {description && <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{description}</p>}
+        <div className="glass-card rounded-2xl flex flex-col h-full bg-[#0a0a0b]/80 border border-white/5 overflow-hidden group">
+            {/* Header */}
+            <div className="p-4 flex items-center justify-between border-b border-white/5 bg-white/[0.02]">
+                <div>
+                    <h3 className="text-sm font-bold text-white/90">{title}</h3>
+                    {description && <p className="text-[10px] text-slate-500">{description}</p>}
                 </div>
-
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
-                        <Info size={18} />
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={toggleFullScreen} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                        <Maximize2 size={16} />
                     </button>
-                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
-                        <Download size={18} />
-                    </button>
-                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10">
-                        <Maximize2 size={18} />
+                    <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                        <Download size={16} />
                     </button>
                 </div>
             </div>
 
-            {/* Premium Dark Content Section */}
-            <div className="flex-1 relative h-[200px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/20">
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col relative min-h-[300px]">
                 {loading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
-                        <div className="relative w-16 h-16">
-                            <div className="absolute inset-0 rounded-full border-4 border-slate-600/30" />
-                            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 border-r-cyan-400 animate-spin" style={{ animationDuration: '1.5s' }} />
-                            <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-purple-400 animate-spin" style={{ animationDuration: '2.5s', animationDirection: 'reverse' }} />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-slate-200 font-semibold text-sm">Loading Visualization</p>
-                            <p className="text-slate-400 text-xs mt-1 animate-pulse">Rendering your chart...</p>
-                        </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="w-6 h-6 border-2 border-slate-700 border-t-white rounded-full animate-spin" />
                     </div>
                 ) : error ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-4 bg-gradient-to-br from-slate-900 via-red-900/20 to-slate-900">
-                        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shadow-lg border border-red-400/30">
-                            <Info size={32} />
-                        </div>
-                        <div>
-                            <p className="text-red-300 font-semibold">Failed to render visualization</p>
-                            <p className="text-red-400/70 text-sm mt-1">Please check your data and try again</p>
-                        </div>
-                        <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-xl border border-red-400/30">
-                            Retry Sync
-                        </button>
+                    <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-red-400/80 text-xs">
+                        Failed to load visualization data
                     </div>
-                ) : config && hasValidData ? (
-                    <div
-                        ref={plotRef}
-                        className="w-full h-full animate-in fade-in duration-700"
-                    />
-                ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center">
-                        <div className="w-20 h-20 rounded-full bg-slate-700/30 flex items-center justify-center mb-4 border border-slate-600/30">
-                            <Info size={40} className="text-slate-500" />
+                ) : hasValidData ? (
+                    <div className="flex-1 flex flex-col">
+                        <div className="flex-1 min-h-[220px]">
+                            <PlotlyChart key={`normal-${title}`} data={plotlyData} layout={plotlyLayout} isFullScreen={false} />
                         </div>
-                        <p className="text-slate-400 font-medium text-sm">
-                            {config ? 'No valid chart data available.' : 'No configuration data available.'}
-                        </p>
+                        <CustomPieLegend data={plotlyData} isFull={false} />
+                    </div>
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-[10px] uppercase font-bold tracking-widest">
+                        Ready for Sync
                     </div>
                 )}
             </div>
 
-            {/* Dark Theme Footer */}
-            <div className="mt-6 pt-6 border-t border-slate-700/30 flex items-center justify-between text-[10px] font-bold tracking-[0.2em] text-white/30">
+            {/* Footer */}
+            <div className="px-4 py-3 border-t border-white/5 bg-white/[0.01] flex items-center justify-between text-[9px] font-black tracking-widest text-slate-600 uppercase">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
-                    <span>SYSTEM ANALYTICS HUB</span>
+                    <div className="w-1 h-1 rounded-full bg-slate-500 shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
+                    <span>HDA CORE UNIT 4</span>
                 </div>
-                <span className="text-right">HDA-CORE 1.0</span>
+                <span>v1.0.8</span>
             </div>
+
+            {/* Portaled Fullscreen Overlay */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {isFullScreen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="fixed inset-0 bg-[#020617] backdrop-blur-3xl overflow-hidden flex flex-col"
+                            style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+                        >
+                            <div className="p-8 md:p-12 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-3xl font-black text-white tracking-tight underline decoration-blue-500/50 underline-offset-8">{title}</h2>
+                                    <p className="text-slate-400 mt-3 text-sm font-medium">{description}</p>
+                                </div>
+                                <button
+                                    onClick={toggleFullScreen}
+                                    className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/10 group"
+                                >
+                                    <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 mx-8 mb-8 md:mx-12 md:mb-12 rounded-[2.5rem] bg-slate-900/40 border border-white/5 shadow-2xl overflow-hidden flex flex-col">
+                                <div className="flex-1">
+                                    <PlotlyChart key={`full-${title}`} data={plotlyData} layout={plotlyLayout} isFullScreen={true} />
+                                </div>
+                                <CustomPieLegend data={plotlyData} isFull={true} />
+                            </div>
+
+                            <div className="px-8 pb-8 md:px-12 md:pb-12 flex items-center justify-between text-[11px] font-black tracking-[0.4em] text-white/10 uppercase">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-pulse" />
+                                    <span>High Dimensional Analytics Environment</span>
+                                </div>
+                                <span>Deployment Stable</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };
