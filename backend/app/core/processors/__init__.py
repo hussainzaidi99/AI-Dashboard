@@ -11,6 +11,7 @@ from .csv_processor import CSVProcessor
 from .docx_processor import DOCXProcessor
 from .image_processor import ImageProcessor
 from .text_processor import TextProcessor
+from .zip_processor import ZipProcessor
 
 __all__ = [
     "BaseProcessor",
@@ -21,6 +22,7 @@ __all__ = [
     "DOCXProcessor",
     "ImageProcessor",
     "TextProcessor",
+    "ZipProcessor",
 ]
 
 
@@ -54,6 +56,7 @@ def get_processor(file_extension: str) -> BaseProcessor:
         'jpg': ImageProcessor,
         'jpeg': ImageProcessor,
         'webp': ImageProcessor,
+        'zip': ZipProcessor,
     }
     
     processor_class = processor_map.get(extension)

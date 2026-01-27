@@ -36,11 +36,11 @@ const FileUploader = ({ onUploadSuccess }) => {
 
     const validateAndUpload = async (file) => {
         // Basic validation
-        const allowedTypes = ['.csv', '.xlsx', '.xls', '.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.webp'];
+        const allowedTypes = ['.csv', '.xlsx', '.xls', '.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.webp', '.zip'];
         const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
         if (!allowedTypes.includes(extension)) {
-            setError('Unsupported file type. Please upload Excel, CSV, PDF, Word, Text or Image files.');
+            setError('Unsupported file type. Please upload Excel, CSV, PDF, Word, Text, Image or Zip files.');
             setUploadState('error');
             return;
         }
@@ -107,7 +107,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                             ref={fileInputRef}
                             onChange={handleFileSelect}
                             className="hidden"
-                            accept=".csv,.xlsx,.xls,.pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                            accept=".csv,.xlsx,.xls,.pdf,.docx,.txt,.png,.jpg,.jpeg,.webp,.zip"
                         />
 
                         <div className="relative z-10">
@@ -115,7 +115,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                                 <Upload className="text-white" size={36} />
                             </div>
                             <h3 className="text-2xl font-bold mb-2">Drop your data here</h3>
-                            <p className="text-muted-foreground mb-6">Support for CSV, Excel, PDF, Word, Text and Images (OCR)</p>
+                            <p className="text-muted-foreground mb-6">Support for CSV, Excel, PDF, Word, Text, Images and Zip archives</p>
 
                             <div className="flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
                                 <span>Max 100MB</span>
