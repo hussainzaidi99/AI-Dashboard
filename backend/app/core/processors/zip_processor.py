@@ -40,8 +40,8 @@ class ZipProcessor(BaseProcessor):
                 with zipfile.ZipFile(file_path, 'r') as zip_ref:
                     # Security check: Don't extract if too many files (Zip bomb protection)
                     file_list = zip_ref.namelist()
-                    if len(file_list) > 50:
-                        raise ValueError(f"Zip contains too many files ({len(file_list)}). Max 50 allowed.")
+                    if len(file_list) > 5:
+                        raise ValueError(f"Zip contains too many files ({len(file_list)}). Max 5 allowed(Total of 100MB, make sure to compress files before uploading).")
                     
                     zip_ref.extractall(temp_dir)
             except zipfile.BadZipFile:
