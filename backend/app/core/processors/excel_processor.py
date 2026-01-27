@@ -8,6 +8,7 @@ Supports multiple sheets, formulas, and formatting
 import time
 from typing import List, Optional, Dict, Any
 import pandas as pd
+import numpy as np
 import logging
 
 from .base import BaseProcessor, ProcessingResult
@@ -53,8 +54,21 @@ class ExcelProcessor(BaseProcessor):
             usecols = kwargs.get('usecols')
             
             # Determine Excel engine based on file extension
-            engine = 'openpyxl' if file_path.endswith('.xlsx') or file_path.endswith('.xlsm') else 'xlrd'
+            extension = file_path.lower().split('.')[-1]
+            engine = 'openpyxl' if extension in ['xlsx', 'xlsm', 'xltx', 'xltm'] else 'xlrd'
             
+            # Auto-detect header if default (0) and not explicitly provided in kwargs
+            if 'header' not in kwargs:
+                # Detect header for each sheet if sheet_name is None (all sheets)
+                # or for the specific sheet
+                try:
+                    detected_header = self._detect_header_row(file_path, sheet_name, engine=engine)
+                    if detected_header is not None:
+                        header = detected_header
+                        self.logger.info(f"Auto-detected header at row {header} for {file_path}")
+                except Exception as he:
+                    self.logger.warning(f"Header detection failed: {str(he)}")
+
             # Read Excel file
             dataframes = []
             sheet_names = []
@@ -310,3 +324,72 @@ class ExcelProcessor(BaseProcessor):
         except Exception as e:
             self.logger.error(f"Error detecting data range: {str(e)}")
             return {}
+
+    def _detect_header_row(self, file_path: str, sheet_name: Any = None, engine: str = 'openpyxl') -> Optional[int]:
+        """
+        Heuristic to detect the most likely header row in an Excel sheet.
+        """
+        try:
+            # Read first 20 rows without header to analyze
+            preview_df = pd.read_excel(
+                file_path,
+                sheet_name=sheet_name if sheet_name is not None else 0,
+                header=None,
+                nrows=20,
+                engine=engine
+            )
+            
+            if preview_df.empty:
+                return None
+            
+            scores = []
+            for idx, row in preview_df.iterrows():
+                non_null_row = row.dropna()
+                # Also treat empty strings as null for heuristic purposes
+                non_empty_row = non_null_row[non_null_row.astype(str).str.strip() != ""]
+                
+                if non_empty_row.empty:
+                    scores.append(-1.0)
+                    continue
+                
+                # Factors for a good header:
+                # 1. Breadth: Headers usually span multiple columns
+                width_ratio = non_empty_row.count() / len(row)
+                
+                # 2. Type: Most values are strings (headers are labels)
+                string_ratio = non_empty_row.apply(lambda x: isinstance(x, str)).mean()
+                
+                # 3. Quality: Values are unique
+                unique_ratio = non_empty_row.nunique() / non_empty_row.count() if non_empty_row.count() > 0 else 0
+                
+                # 4. Length: Values aren't too long
+                avg_len = non_empty_row.apply(lambda x: len(str(x))).mean()
+                len_score = 1.0 if avg_len < 30 else (0.5 if avg_len < 60 else 0.1)
+                
+                # 5. Penalize numeric-heavy rows
+                numeric_count = pd.to_numeric(non_empty_row, errors='coerce').notna().sum()
+                numeric_ratio = numeric_count / non_empty_row.count()
+                
+                # Calculate weighted score (Heuristic)
+                # Stronger weights on width and strings
+                score = (width_ratio * 0.4) + (string_ratio * 0.3) + (unique_ratio * 0.2) + (len_score * 0.1) - (numeric_ratio * 0.6)
+                scores.append(score)
+            
+            if not scores:
+                return None
+                
+            # Pick the best overall row
+            best_row = int(np.argmax(scores))
+            best_score = scores[best_row]
+            
+            # Threshold Check
+            if best_score > 0.4:
+                # If there's a tie or close calls, the earlier one is usually a title, 
+                # but our width ratio should have penalized it.
+                # However, if two rows look like headers, the one with more content is likely the real header.
+                return best_row
+                
+            return None
+        except Exception as e:
+            self.logger.debug(f"Header detection internal error: {str(e)}")
+            return None

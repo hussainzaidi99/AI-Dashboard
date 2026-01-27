@@ -16,12 +16,15 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
+import numpy as np
+import pandas as pd
 
 from app.config import get_upload_path 
 from app.core.processors import get_processor
 from app.models.mongodb_models import FileUpload, ProcessingJob
 from app.utils.cache import cache_manager
 from app.utils.json_encoder import serialize_to_json
+from app.utils.response_sanitizer import sanitize_dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -93,7 +96,7 @@ async def process_file(request: ProcessRequest, background_tasks: BackgroundTask
                 "rows": len(df),
                 "columns": len(df.columns),
                 "column_names": df.columns.tolist(),
-                "data": df.to_dict('records'),
+                "data": df.replace({np.nan: None}).to_dict('records'),
                 "dtypes": df.dtypes.astype(str).to_dict()
             })
         
@@ -190,7 +193,7 @@ async def get_processing_result(file_id: str):
     if not cached_result:
         raise HTTPException(status_code=404, detail="Processed data not found. Process the file first.")
     
-    return cached_result
+    return sanitize_dict(cached_result)
 
 
 @router.delete("/result/{file_id}")

@@ -141,7 +141,16 @@ class BaseProcessor(ABC):
         df = df.dropna(how='all', axis=1)  # Empty columns
         
         # Clean column names
-        df.columns = df.columns.map(lambda x: str(x).strip())
+        df.columns = [str(col).strip() for col in df.columns]
+        
+        # Handle "Unnamed" columns from pandas
+        new_columns = []
+        for i, col in enumerate(df.columns):
+            if "Unnamed:" in col or col.lower() == "nan" or not col:
+                new_columns.append(f"Column_{i+1}")
+            else:
+                new_columns.append(col)
+        df.columns = new_columns
         
         # Remove duplicate column names
         df.columns = self._make_unique_columns(df.columns.tolist())

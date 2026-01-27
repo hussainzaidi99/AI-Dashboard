@@ -83,7 +83,7 @@ async def profile_data(file_id: str, sheet_index: int = 0):
         )
         await data_profile.insert()
         
-        return profile_result
+        return sanitize_dict(profile_result)
     
     except Exception as e:
         logger.error(f"Error profiling data: {str(e)}")
@@ -243,7 +243,7 @@ async def check_quality(file_id: str, sheet_index: int = 0):
         )
         await quality_report.insert()
         
-        return report_result
+        return sanitize_dict(report_result)
     
     except Exception as e:
         logger.error(f"Error checking quality: {str(e)}")
@@ -264,13 +264,13 @@ async def get_columns(file_id: str, sheet_index: int = 0):
     
     sheet_data = data['dataframes'][sheet_index]
     
-    return {
+    return sanitize_dict({
         "file_id": file_id,
         "sheet_index": sheet_index,
         "sheet_name": sheet_data['sheet_name'],
         "columns": sheet_data['column_names'],
         "dtypes": sheet_data['dtypes']
-    }
+    })
 
 
 @router.get("/{file_id}")
@@ -298,7 +298,7 @@ async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 10
     else:
         limited_data = sheet_data['data']
     
-    return {
+    return sanitize_dict({
         "file_id": file_id,
         "sheet_name": sheet_data['sheet_name'],
         "total_rows": sheet_data['rows'],
@@ -306,4 +306,4 @@ async def get_data(file_id: str, sheet_index: int = 0, limit: Optional[int] = 10
         "columns": sheet_data['column_names'],
         "data": limited_data,
         "showing_rows": len(limited_data)
-    }
+    })

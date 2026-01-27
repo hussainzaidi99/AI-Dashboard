@@ -15,6 +15,7 @@ from app.core.visualizers import ChartFactory, DashboardBuilder
 from app.models.mongodb_models import FileUpload, ChartData, Dashboard as MongoDBDashboard
 from app.utils.cache import cache_manager
 from app.utils.data_persistence import get_processed_data
+from app.utils.response_sanitizer import sanitize_dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -77,12 +78,12 @@ async def create_chart(request: ChartRequest):
         # Convert to JSON
         chart_json = fig.to_json()
         
-        return {
+        return sanitize_dict({
             "file_id": request.file_id,
             "chart_type": request.chart_type,
             "chart": json.loads(chart_json),
             "message": "Chart created successfully"
-        }
+        })
     
     except Exception as e:
         logger.error(f"Error creating chart: {str(e)}")
@@ -136,11 +137,11 @@ async def recommend_charts(
                 "config": rec.config
             })
         
-        return {
+        return sanitize_dict({
             "file_id": file_id,
             "sheet_index": sheet_index,
             "recommendations": results
-        }
+        })
     
     except Exception as e:
         logger.error(f"Error recommending charts: {str(e)}")
@@ -207,14 +208,14 @@ async def create_dashboard(request: DashboardRequest):
                 "chart": json.loads(widget.figure.to_json())
             })
         
-        return {
+        return sanitize_dict({
             "dashboard_id": dashboard.id,
             "title": dashboard.title,
             "description": dashboard.description,
             "widget_count": len(widgets),
             "widgets": widgets,
             "created_at": dashboard.created_at
-        }
+        })
     
     except Exception as e:
         logger.error(f"Error creating dashboard: {str(e)}")
@@ -270,10 +271,10 @@ async def create_correlation_matrix(
         factory = ChartFactory()
         fig = factory.create_correlation_matrix(df)
         
-        return {
+        return sanitize_dict({
             "file_id": file_id,
             "chart": json.loads(fig.to_json())
-        }
+        })
     
     except Exception as e:
         logger.error(f"Error creating correlation matrix: {str(e)}")
