@@ -18,7 +18,8 @@ from app.models.mongodb_models import (
     ChartData,
     Dashboard,
     DataProfile,
-    QualityReport
+    QualityReport,
+    TokenUsage
 )
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ BEANIE_MODELS = [
     ChartData,
     Dashboard,
     DataProfile,
-    QualityReport
+    QualityReport,
+    TokenUsage
 ]
 
 async def init_mongodb():

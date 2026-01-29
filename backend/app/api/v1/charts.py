@@ -114,6 +114,13 @@ async def recommend_charts(
         if sheet_index >= len(data['dataframes']):
             raise HTTPException(status_code=400, detail="Sheet index out of range")
         
+        # Check credits if using AI
+        user_id = file_upload.user_id or "anonymous"
+        if user_id != "anonymous":
+            from app.core.billing import BillingService
+            if not await BillingService.has_sufficient_balance(user_id, estimated_cost=100):
+                 raise HTTPException(status_code=402, detail="Insufficient credits.")
+        
         # Get DataFrame
         sheet_data = data['dataframes'][sheet_index]
         df = pd.DataFrame(sheet_data['data'])
@@ -123,7 +130,8 @@ async def recommend_charts(
         recommendations = await recommender.recommend_charts(
             df=df,
             user_intent=user_intent,
-            use_ai=True
+            use_ai=True,
+            user_id=user_id
         )
         
         # Convert to serializable format

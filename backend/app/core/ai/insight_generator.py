@@ -323,7 +323,8 @@ class InsightGenerator:
         self,
         df: pd.DataFrame,
         insights: List[DataInsight],
-        user_question: Optional[str] = None
+        user_question: Optional[str] = None,
+        user_id: str = "anonymous"
     ) -> str:
         """Generate a production-level, high-impact summary of data insights"""
         
@@ -367,7 +368,9 @@ Keep it tight. Quality > Quantity."""
         try:
             summary = await self.llm.generate(
                 prompt=prompt,
-                system_message=system_message
+                system_message=system_message,
+                user_id=user_id,
+                endpoint="insights"
             )
             return summary.strip()
         

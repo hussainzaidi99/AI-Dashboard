@@ -86,7 +86,8 @@ async def generate_insights(request: InsightRequest):
             summary = await generator.generate_ai_summary(
                 df=df,
                 insights=insights,
-                user_question=request.user_question
+                user_question=request.user_question,
+                user_id=file_upload.user_id or "anonymous"
             )
             
             # Convert insights to serializable format
@@ -124,7 +125,9 @@ Output format:
             
             summary = await llm.generate(
                 prompt=summary_prompt,
-                system_message="You are a sophisticated Document Intelligence Assistant. Your goal is to provide a dense, professional summary of text content."
+                system_message="You are a sophisticated Document Intelligence Assistant. Your goal is to provide a dense, professional summary of text content.",
+                user_id=file_upload.user_id or "anonymous",
+                endpoint="insights_text"
             )
             
             insights_list.append({
@@ -179,10 +182,23 @@ async def parse_natural_language_query(request: QueryRequest):
     print(f"\n[AI Query] Incoming request: {request.query}")
     try:
         import hashlib
-        
+        from app.core.billing import BillingService
+        from app.models.mongodb_models import FileUpload
+
         # Validate required fields
         if not request.query or not request.query.strip():
             raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+        # Check credits (Estimate 500 tokens for query)
+        # Note: We need file_id to get user logic, done below shortly, but we pull it up for check
+        file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
+        if not file_upload:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        user_id = file_upload.user_id or "anonymous"
+        if user_id != "anonymous":
+             if not await BillingService.has_sufficient_balance(user_id, estimated_cost=500):
+                 raise HTTPException(status_code=402, detail="Insufficient credits.")
         
         # Check cache first (1-hour TTL)
         query_hash = hashlib.md5(request.query.lower().strip().encode()).hexdigest()[:10]
@@ -213,7 +229,8 @@ async def parse_natural_language_query(request: QueryRequest):
         parsed = await parser.parse_query(
             query=request.query,
             df=df,
-            use_ai=request.use_ai
+            use_ai=request.use_ai,
+            user_id=file_upload.user_id or "anonymous"
         )
         
         # Suggest chart type if not specified
@@ -302,6 +319,18 @@ async def ask_question(request: AskRequest):
     try:
         import hashlib
         from app.core.ai import get_llm_client
+        from app.core.billing import BillingService
+        from app.models.mongodb_models import FileUpload
+        
+        # Check credits early
+        file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
+        if not file_upload:
+             raise HTTPException(status_code=404, detail="File not found")
+
+        user_id = file_upload.user_id or "anonymous"
+        if user_id != "anonymous":
+             if not await BillingService.has_sufficient_balance(user_id, estimated_cost=500):
+                 raise HTTPException(status_code=402, detail="Insufficient credits.")
         
         # Check cache first (30-minute TTL)
         question_hash = hashlib.md5(request.question.lower().encode()).hexdigest()[:8]
@@ -337,10 +366,16 @@ CONVERSATIONAL GUIDELINES:
 6. NO REPETITION: Don't repeat information you've already given in the history.
 7. FORMATTING: Use #### for headings and standard Markdown for structure."""
         
+        
+        # Use user_id determined earlier
+
+
         response = await llm.generate(
             prompt=f"Context (Use only if relevant):\n{data_context}\n\nUser Question: {request.question}",
             system_message=system_message,
-            history=request.history
+            history=request.history,
+            user_id=user_id,
+            endpoint="chat"
         )
         
         result = {
@@ -374,6 +409,17 @@ async def stream_ask_question(request: AskRequest):
                 yield f"data: {json.dumps({'error': 'Data not found'})}\n\n"
                 return
             
+            # Check credits
+            from app.models.mongodb_models import FileUpload
+            from app.core.billing import BillingService
+            file_upload = await FileUpload.find_one(FileUpload.file_id == request.file_id)
+            user_id = (file_upload.user_id if file_upload else None) or "anonymous"
+            
+            if user_id != "anonymous":
+                if not await BillingService.has_sufficient_balance(user_id, estimated_cost=500):
+                     yield f"data: {json.dumps({'error': 'Insufficient credits. Upgrade to continue.'})}\n\n"
+                     return
+            
             data_context = _prepare_data_context(data, request.sheet_index)
             llm = get_llm_client()
             
@@ -389,10 +435,15 @@ PROTOCOL:
 5. NO REPETITION: If the history shows you just answered something, focus on the new angle requested.
 6. STRUCTURE: Use #### for headings and Markdown bullet points."""
             
+            # Use user_id determined earlier
+
+
             async for token in llm.stream(
                 prompt=f"Context (Reference only if needed):\n{data_context}\n\nUser Question: {request.question}",
                 system_message=system_message,
-                history=request.history
+                history=request.history,
+                user_id=user_id,
+                endpoint="chat_stream"
             ) :
                 yield f"data: {json.dumps({'token': token})}\n\n"
             

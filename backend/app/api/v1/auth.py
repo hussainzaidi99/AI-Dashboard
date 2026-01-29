@@ -31,6 +31,11 @@ async def register(user_in: UserCreate) -> Any:
         role=user_in.role
     )
     await user_obj.insert()
+    
+    # Grant initial free credits
+    from app.core.billing import BillingService
+    await BillingService.grant_initial_credits(user_obj.user_id)
+    
     return user_obj
 
 @router.post("/login", response_model=Token)
@@ -101,6 +106,10 @@ async def google_login(data: GoogleLoginRequest) -> Any:
                 role="user"
             )
             await user.insert()
+            
+            # Grant initial free credits
+            from app.core.billing import BillingService
+            await BillingService.grant_initial_credits(user.user_id)
         elif not user.is_active:
             logger.warning(f"Inactive user attempted login: {email}")
             raise HTTPException(

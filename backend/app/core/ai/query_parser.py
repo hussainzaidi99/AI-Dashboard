@@ -104,7 +104,8 @@ class QueryParser:
         query: str,
         df: pd.DataFrame,
         use_ai: bool = True,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_id: str = "anonymous"
     ) -> ParsedQuery:
         """
         Main method to parse natural language query
@@ -130,7 +131,7 @@ class QueryParser:
             try:
                 # Include conversation context in AI parsing
                 context = self.conversation_mgr.get_context(session_id) if session_id else {}
-                result = await self._parse_with_ai(resolved_query, df, context)
+                result = await self._parse_with_ai(resolved_query, df, context, user_id=user_id)
                 
                 # Update conversation context with parsed result
                 if session_id:
@@ -161,7 +162,8 @@ class QueryParser:
         self,
         query: str,
         df: pd.DataFrame,
-        conversation_context: Optional[Dict[str, Any]] = None
+        conversation_context: Optional[Dict[str, Any]] = None,
+        user_id: str = "anonymous"
     ) -> ParsedQuery:
         """
         Parse query using AI/LLM with conversation context
@@ -270,7 +272,9 @@ Return ONLY the JSON response, nothing else."""
                     "sort_by": "string or null",
                     "limit": "number or null",
                     "confidence": "float"
-                }
+                },
+                user_id=user_id,
+                endpoint="query"
             )
             
             # Extract results

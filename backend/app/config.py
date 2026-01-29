@@ -53,6 +53,10 @@ class Settings:
     
     # ==================== Redis ====================
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
+    CREDIT_CACHE_TTL: int = int(os.getenv("CREDIT_CACHE_TTL", "300"))  # 5 minutes
     
     # ==================== Celery ====================
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")

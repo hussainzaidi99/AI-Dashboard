@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { creditsApi } from '../../api/credits';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -20,6 +22,21 @@ const Navbar = () => {
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
     const initials = user?.email?.substring(0, 2).toUpperCase() || 'AI';
+
+    // Fetch Credits
+    const { data: creditData } = useQuery({
+        queryKey: ['user-credits'],
+        queryFn: creditsApi.getCredits,
+        refetchInterval: 30000, // Poll every 30s
+        staleTime: 1000 * 60 * 5 // Consider stale after 5 mins (but poll overrides)
+    });
+
+    const credits = creditData?.display_credits || 0.00;
+
+    // Color Logic
+    let creditColor = "text-emerald-400"; // Good
+    if (credits < 10) creditColor = "text-yellow-400"; // Warning
+    if (credits < 2) creditColor = "text-red-500"; // Critical
 
     return (
         <header className="h-20 flex items-center justify-between px-8 bg-background/30 backdrop-blur-xl border-b border-white/10 z-30 sticky top-0">
@@ -42,6 +59,14 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-6">
+
+                {/* Credits Badge */}
+                <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner">
+                    <div className={`w-2 h-2 rounded-full ${credits > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                    <span className={`text-sm font-bold font-mono ${creditColor}`}>{credits.toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider ml-1">Credits</span>
+                </div>
+
                 {/* Notifications & Date */}
                 <div className="flex items-center gap-3">
                     <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-muted-foreground">

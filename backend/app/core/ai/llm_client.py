@@ -91,15 +91,20 @@ class LLMClient:
             verbose=settings.DEBUG
         )
     
+
     async def generate(
         self,
         prompt: str,
         system_message: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
+        user_id: str = "anonymous",
+        endpoint: str = "generate",
         **kwargs
     ) -> str:
-        """Generate response from LLM with rate limit handling and history support"""
+        """Generate response from LLM with rate limit handling, history support, and Billing"""
         try:
+            from app.core.billing import BillingService
+            
             messages = []
             
             if system_message:
@@ -116,6 +121,51 @@ class LLMClient:
             messages.append(("human", prompt))
             
             response = await self.llm.ainvoke(messages, **kwargs)
+            
+            # --- Billing Integration ---
+            try:
+                # Use info level for now to debug token extraction in production
+                logger.info(f"LLM Response Metadata: {response.response_metadata}")
+                
+                input_tokens = 0
+                output_tokens = 0
+                
+                # Try multiple extraction paths for Gemini and others
+                # 1. LangChain 0.3+ usage_metadata attribute
+                if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                    input_tokens = response.usage_metadata.get('input_tokens', 0)
+                    output_tokens = response.usage_metadata.get('output_tokens', 0)
+                
+                # 2. Response Metadata usage_metadata (Standard)
+                if not input_tokens and response.response_metadata:
+                    usage = response.response_metadata.get('usage_metadata', {})
+                    if usage:
+                        input_tokens = usage.get('input_tokens', 0)
+                        output_tokens = usage.get('output_tokens', 0)
+
+                # 3. Groq / OpenAI style keys
+                if not input_tokens and response.response_metadata:
+                    if 'token_usage' in response.response_metadata:
+                        token_usage = response.response_metadata['token_usage']
+                        input_tokens = token_usage.get('prompt_tokens', 0)
+                        output_tokens = token_usage.get('completion_tokens', 0)
+
+                logger.info(f"Final extracted tokens: Input={input_tokens}, Output={output_tokens} for user={user_id}")
+
+                if user_id and user_id != "anonymous" and (input_tokens or output_tokens):
+                    await BillingService.log_usage(
+                        user_id=user_id,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        endpoint=endpoint,
+                        model=self.model
+                    )
+                elif user_id and user_id != "anonymous":
+                    logger.warning(f"No tokens extracted for active user {user_id}. Skipping billing.")
+            except Exception as e:
+                logger.error(f"Billing logging failed (non-blocking): {str(e)}")
+            # ---------------------------
+
             return response.content
         
         except Exception as e:
@@ -147,10 +197,14 @@ class LLMClient:
         prompt: str,
         system_message: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
+        user_id: str = "anonymous",
+        endpoint: str = "stream",
         **kwargs
     ):
-        """Stream response from LLM token by token with history support"""
+        """Stream response from LLM token by token with history support and Billing"""
         try:
+            from app.core.billing import BillingService
+
             messages = []
             
             if system_message:
@@ -166,11 +220,43 @@ class LLMClient:
             
             messages.append(("human", prompt))
             
+            # Accumulate usage for streaming
+            accumulated_usage = {"input_tokens": 0, "output_tokens": 0}
+            logged = False
+
             async for chunk in self.llm.astream(messages, **kwargs):
+                # Check for usage metadata in chunk
+                if chunk.response_metadata:
+                     # Gemini / LangChain often sends usage in the last chunk
+                     usage = chunk.response_metadata.get('usage_metadata', {})
+                     if usage:
+                         accumulated_usage = usage 
+                
+                # Fallback for newer langchain-google-genai versions
+                if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
+                    accumulated_usage = chunk.usage_metadata
+
                 if hasattr(chunk, 'content'):
                     yield chunk.content
                 else:
                     yield str(chunk)
+            
+            # --- Billing Integration (End of Stream) ---
+            try:
+                input_tokens = accumulated_usage.get('input_tokens', 0)
+                output_tokens = accumulated_usage.get('output_tokens', 0)
+
+                if user_id and user_id != "anonymous" and (input_tokens or output_tokens):
+                     await BillingService.log_usage(
+                        user_id=user_id,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        endpoint=endpoint,
+                        model=self.model
+                    )
+            except Exception as e:
+                logger.error(f"Billing logging failed (non-blocking): {str(e)}")
+            # -------------------------------------------
                     
         except Exception as e:
             error_msg = str(e).lower()
@@ -187,7 +273,7 @@ class LLMClient:
         system_message: Optional[str] = None,
         **kwargs
     ) -> str:
-        """Synchronous version of generate"""
+        """Synchronous version of generate (No billing support yet)"""
         try:
             messages = []
             
@@ -207,7 +293,9 @@ class LLMClient:
         self,
         prompt: str,
         system_message: str,
-        output_schema: Dict[str, Any]
+        output_schema: Dict[str, Any],
+        user_id: str = "anonymous", 
+        endpoint: str = "structured"
     ) -> Dict[str, Any]:
         """Generate structured output (JSON) from LLM"""
         enhanced_system = f"""{system_message}
@@ -221,7 +309,12 @@ Important:
 - Use proper JSON formatting
 """
         
-        response = await self.generate(prompt, enhanced_system)
+        response = await self.generate(
+            prompt, 
+            enhanced_system, 
+            user_id=user_id, 
+            endpoint=endpoint
+        )
         
         # Parse JSON response
         import json

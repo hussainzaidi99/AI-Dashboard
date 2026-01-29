@@ -26,7 +26,7 @@ if sys.version_info >= (3, 12):
 
 from app.config import settings
 from app.core.mongodb_conns import init_mongodb, check_mongodb_connection
-from app.api.v1 import upload, processing, charts, data, ai, export, auth
+from app.api.v1 import upload, processing, charts, data, ai, export, auth, credits
 from app.utils.cache import cache_manager
 
 # Configure logging
@@ -47,9 +47,10 @@ async def lifespan(app: FastAPI):
     try:
         success = await init_mongodb()
         if not success:
-            logger.error("Failed to initialize MongoDB")
-            if not settings.DEBUG:
-                raise RuntimeError("MongoDB initialization failed")
+            logger.critical("CRITICAL: MongoDB initialization failed. Application cannot start.")
+            # Even in DEBUG mode, we should probably stop if the DB is missing, 
+            # as it leads to confusing AttributeErrors in models.
+            raise RuntimeError("MongoDB initialization failed. Check your network/DNS connection to Atlas.")
     except Exception as e:
         logger.error(f"Error during MongoDB initialization: {e}")
         if not settings.DEBUG:
@@ -76,6 +77,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add credit check middleware (after CORS, before routes)
+from app.middleware.credit_check import CreditCheckMiddleware
+app.add_middleware(CreditCheckMiddleware)
+
 # Include API Routers
 app.include_router(upload.router, prefix=f"{settings.API_V1_PREFIX}/upload", tags=["Upload"])
 app.include_router(processing.router, prefix=f"{settings.API_V1_PREFIX}/processing", tags=["Processing"])
@@ -84,6 +89,7 @@ app.include_router(data.router, prefix=f"{settings.API_V1_PREFIX}/data", tags=["
 app.include_router(ai.router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI"])
 app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tags=["Export"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Auth"])
+app.include_router(credits.router, prefix=f"{settings.API_V1_PREFIX}/credits", tags=["Credits"])
 
 
 @app.get("/")

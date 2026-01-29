@@ -5,13 +5,16 @@ MongoDB Models
 Beanie Document models for MongoDB
 """
 
+import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from beanie import Document, Indexed, before_event, Replace, Insert, SaveChanges
-from pydantic import Field
+from pydantic import Field, BaseModel
 import uuid
 
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 def generate_uuid():
     """Generate UUID string"""
@@ -37,13 +40,34 @@ class User(Document):
     hashed_password: str
     role: UserRole = UserRole.USER
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    active_balance: int = 0
+    batches: List["CreditBatch"] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
     @before_event([Replace, SaveChanges, Insert])
-    def update_timestamp(self):
-        """Update updated_at timestamp on save"""
-        self.updated_at = datetime.utcnow()
+    def update_and_recalculate(self):
+        """Update updated_at and refresh balance before save"""
+        self.updated_at = datetime.now(timezone.utc)
+        
+        # Filter for valid, non-expired batches with remaining tokens
+        # Standardize 'now' to be timezone-aware UTC
+        now = datetime.now(timezone.utc)
+        
+        total = 0
+        for b in self.batches:
+            # Ensure batch expiry is also treated as UTC if naive
+            expiry = b.expires_at
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=timezone.utc)
+                
+            if b.remaining_tokens > 0 and expiry > now:
+                total += b.remaining_tokens
+            else:
+                logger.debug(f"Skipping batch {b.batch_id}: tokens={b.remaining_tokens}, expired={expiry <= now}")
+                
+        self.active_balance = total
+        logger.info(f"Recalculated balance for {self.email}: {self.active_balance}")
 
     class Settings:
         name = "users"
@@ -164,3 +188,39 @@ class QualityReport(Document):
     class Settings:
         name = "quality_reports"
         indexes = ["file_id", "overall_score", "created_at"]
+
+# Pricing & Billing Models
+
+class CreditBatchType(str, Enum):
+    """Types of credit batches"""
+    MONTHLY_FREE = "monthly_free"
+    PAID_BASIC = "paid_basic"
+    PAID_PREMIUM = "paid_premium"
+    ADMIN_GRANT = "admin_grant"
+
+class CreditBatch(BaseModel):
+    """A specific batch of credits with its own expiry"""
+    batch_id: str = Field(default_factory=generate_uuid)
+    type: CreditBatchType
+    amount_tokens: int
+    remaining_tokens: int
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Removed UserCredits class as it's now merged into User model
+
+class TokenUsage(Document):
+    """Log of every AI interaction and its cost"""
+    usage_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
+    user_id: Indexed(str)
+    endpoint: str  # e.g., "insights", "chat", "query"
+    model: str     # e.g., "gemini-2.0-flash"
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    cost_estimated: float = 0.0 # Optional: compute cost at logging time
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "token_usage"
+        indexes = ["user_id", "timestamp", "endpoint"]

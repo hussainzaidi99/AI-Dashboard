@@ -13,8 +13,10 @@ from datetime import datetime
 import logging
 
 from app.config import settings, is_allowed_file, get_upload_path
-from app.models.mongodb_models import FileUpload
+from app.models.mongodb_models import FileUpload, User
 from app.utils.cache import cache_manager
+from app.api import deps
+from fastapi import Depends
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -23,7 +25,8 @@ logger = logging.getLogger(__name__)
 @router.post("")
 async def upload_file(
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None
+    background_tasks: BackgroundTasks = None,
+    current_user: "User" = Depends(deps.get_current_user)
 ):
     """
     Upload a single file for processing
@@ -69,7 +72,8 @@ async def upload_file(
             file_size=file_size,
             file_type=file_extension,
             file_path=file_path,
-            status="uploaded"
+            status="uploaded",
+            user_id=current_user.user_id
         )
         await file_upload.insert()
         
@@ -93,7 +97,8 @@ async def upload_file(
 
 @router.post("/multiple")
 async def upload_multiple_files(
-    files: List[UploadFile] = File(...)
+    files: List[UploadFile] = File(...),
+    current_user: "User" = Depends(deps.get_current_user)
 ):
     """
     Upload multiple files for batch processing
@@ -147,7 +152,8 @@ async def upload_multiple_files(
                     file_size=file_size,
                     file_type=file_extension,
                     file_path=file_path,
-                    status="uploaded"
+                    status="uploaded",
+                    user_id=current_user.user_id
                 )
                 await file_upload.insert()
                 

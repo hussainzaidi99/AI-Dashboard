@@ -157,7 +157,8 @@ class ChartRecommender:
     async def get_ai_recommendations(
         self,
         analysis: Dict[str, Any],
-        user_intent: Optional[str] = None
+        user_intent: Optional[str] = None,
+        user_id: str = "anonymous"
     ) -> List[ChartRecommendation]:
         """Get AI-powered recommendations using LLM"""
         
@@ -230,7 +231,9 @@ Chart types to choose from:
                             "config": {}
                         }
                     ]
-                }
+                },
+                user_id=user_id,
+                endpoint="chart_recommend"
             )
             
             # Convert to ChartRecommendation objects
@@ -254,7 +257,8 @@ Chart types to choose from:
         self,
         df: pd.DataFrame,
         user_intent: Optional[str] = None,
-        use_ai: bool = True
+        use_ai: bool = True,
+        user_id: str = "anonymous"
     ) -> List[ChartRecommendation]:
         """Main method to get chart recommendations"""
         
@@ -267,7 +271,7 @@ Chart types to choose from:
         # Get AI recommendations if enabled
         if use_ai:
             try:
-                ai_recommendations = await self.get_ai_recommendations(analysis, user_intent)
+                ai_recommendations = await self.get_ai_recommendations(analysis, user_intent, user_id=user_id)
                 
                 # Merge and deduplicate recommendations
                 all_recs = ai_recommendations + rule_recommendations
