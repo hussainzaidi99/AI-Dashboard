@@ -13,7 +13,7 @@ import {
     ChevronLeft,
     Menu
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const SidebarItem = ({ icon: Icon, label, to, isCollapsed }) => (
@@ -42,6 +42,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         { id: 'upload', label: 'Data Upload', icon: Upload, to: '/upload' },
         { id: 'intelligence', label: 'AI Insights', icon: PieChart, to: '/intelligence' },
         { id: 'raw-data', label: 'Raw Data', icon: Database, to: '/data' },
+        { id: 'pricing', label: 'Pricing', icon: MessageSquare, to: '/pricing' },
     ];
 
     const footerItems = [
@@ -110,11 +111,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                         <span className="font-semibold uppercase tracking-wider">Premium Plan</span>
                     </div>
                     <p className="text-muted-foreground leading-relaxed">
-                        Your subscription will renew on May 15.
+                        Your subscription will renew based on the expiry date of your current plan.
                     </p>
-                    <button className="mt-3 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors font-medium">
-                        Manage Subscription
-                    </button>
+                    <Link to="/pricing" className="mt-3 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors font-medium flex items-center justify-center">
+                        Manage Credits
+                    </Link>
                 </div>
             </div>
         </aside>

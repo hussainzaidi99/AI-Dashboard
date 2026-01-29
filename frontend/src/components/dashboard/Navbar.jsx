@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     Search as SearchIcon,
@@ -13,25 +13,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { creditsApi } from '../../api/credits';
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, activeBalance } = useAuth();
     const navigate = useNavigate();
-    const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const initials = user?.email?.substring(0, 2).toUpperCase() || 'AI';
 
-    // Fetch Credits
-    const { data: creditData } = useQuery({
-        queryKey: ['user-credits'],
-        queryFn: creditsApi.getCredits,
-        refetchInterval: 30000, // Poll every 30s
-        staleTime: 1000 * 60 * 5 // Consider stale after 5 mins (but poll overrides)
-    });
-
-    const credits = creditData?.display_credits || 0.00;
+    // Calculate display credits (1 Credit = 70,000 tokens)
+    const credits = (activeBalance || 0) / 70000;
 
     // Color Logic
     let creditColor = "text-emerald-400"; // Good

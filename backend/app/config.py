@@ -101,6 +101,11 @@ class Settings:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FILE: str = os.getenv("LOG_FILE", "./logs/app.log")
     
+    # ==================== Stripe & Payments ====================
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    
     # ==================== Feature Flags ====================
     ENABLE_AI_RECOMMENDATIONS: bool = os.getenv("ENABLE_AI_RECOMMENDATIONS", "False").lower() == "true"
     ENABLE_EXPORT_PDF: bool = os.getenv("ENABLE_EXPORT_PDF", "False").lower() == "true"
@@ -139,6 +144,10 @@ class Settings:
                 required_vars["GEMINI_API_KEY"] = self.GEMINI_API_KEY
             else:
                 required_vars["GROQ_API_KEY"] = self.GROQ_API_KEY
+            
+        # Stripe validation only for production (or always if we want to be safe)
+        if not self.STRIPE_SECRET_KEY:
+             print("WARNING: STRIPE_SECRET_KEY not set!")
         
         missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
         

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { creditsApi } from '../api/credits';
 
 const AuthContext = createContext(null);
 
@@ -7,6 +8,18 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(sessionStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
+    const [activeBalance, setActiveBalance] = useState(0);
+
+    const refreshCredits = async () => {
+        if (!token) return;
+        try {
+            const data = await creditsApi.getCredits();
+            // The backend returns 'active_tokens'
+            setActiveBalance(data.active_tokens || 0);
+        } catch (err) {
+            console.error('Failed to refresh credits:', err);
+        }
+    };
 
     useEffect(() => {
         const initAuth = async () => {
@@ -15,6 +28,8 @@ export const AuthProvider = ({ children }) => {
                     const savedUser = sessionStorage.getItem('user');
                     if (savedUser) {
                         setUser(JSON.parse(savedUser));
+                        // Fetch initial credits
+                        refreshCredits();
                     } else {
                         setUser({ email: 'user@example.com', role: 'user' });
                     }
@@ -40,6 +55,7 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.setItem('token', newToken);
             setUser(response.data.user);
             sessionStorage.setItem('user', JSON.stringify(response.data.user));
+            // Credits will be fetched by the useEffect
             return true;
         } catch (err) {
             console.error('Login error:', err);
@@ -58,6 +74,7 @@ export const AuthProvider = ({ children }) => {
 
             setUser(response.data.user);
             sessionStorage.setItem('user', JSON.stringify(response.data.user));
+            // Credits will be fetched by the useEffect
             return true;
         } catch (err) {
             console.error('Google login error:', err);
@@ -83,13 +100,25 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setToken(null);
         setUser(null);
+        setActiveBalance(0);
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         delete axios.defaults.headers.common['Authorization'];
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, googleLogin, logout, register, isAuthenticated: !!token }}>
+        <AuthContext.Provider value={{
+            user,
+            token,
+            loading,
+            activeBalance,
+            refreshCredits,
+            login,
+            googleLogin,
+            logout,
+            register,
+            isAuthenticated: !!token
+        }}>
             {children}
         </AuthContext.Provider>
     );

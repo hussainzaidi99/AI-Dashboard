@@ -45,7 +45,15 @@ const FileUploader = ({ onUploadSuccess }) => {
             return;
         }
 
-        setFileInfo({ name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' MB' });
+        const formatFileSize = (bytes) => {
+            if (!bytes || isNaN(bytes)) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        };
+
+        setFileInfo({ name: file.name, size: formatFileSize(file.size) });
         setIsTextOnly(false);
         setUploadState('uploading');
         setError(null);

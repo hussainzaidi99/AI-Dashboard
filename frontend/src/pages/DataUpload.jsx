@@ -46,6 +46,14 @@ const DataUpload = () => {
         }
     };
 
+    const formatFileSize = (bytes) => {
+        if (!bytes || isNaN(bytes)) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
     return (
         <div className="space-y-12 pb-20">
             {/* Header Section */}
@@ -144,11 +152,11 @@ const DataUpload = () => {
                                     <div>
                                         <h4 className="font-bold text-sm mb-1">{file.filename}</h4>
                                         <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-                                            <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                            <span>{file.file_size_formatted || formatFileSize(file.file_size)}</span>
                                             <span className="w-1 h-1 rounded-full bg-white/20" />
-                                            <span>{file.metadata?.content_type || 'Document'}</span>
+                                            <span>{file.file_type || 'Document'}</span>
                                             <span className="w-1 h-1 rounded-full bg-white/20" />
-                                            <span>{format(new Date(file.created_at || Date.now()), 'MMM d, yyyy')}</span>
+                                            <span>{format(new Date(file.uploaded_at || Date.now()), 'MMM d, yyyy')}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -5,9 +5,11 @@ import ReactMarkdown from 'react-markdown';
 import { useDataset } from '../../context/DatasetContext';
 import { useLocation } from 'react-router-dom';
 import { aiApi } from '../../api/ai';
+import { useAuth } from '../../context/AuthContext';
 
 const Chatbot = () => {
     const { activeFileId, activeFileName, activeSheetIndex, hasActiveDataset } = useDataset();
+    const { refreshCredits } = useAuth();
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -133,6 +135,9 @@ const Chatbot = () => {
 
             // Mark stream as complete
             setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, isStreaming: false } : m));
+
+            // Refresh global credits state after interaction
+            refreshCredits();
 
         } catch (err) {
             console.error('Chat error:', err);

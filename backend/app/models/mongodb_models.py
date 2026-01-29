@@ -42,6 +42,7 @@ class User(Document):
     is_active: bool = True
     active_balance: int = 0
     batches: List["CreditBatch"] = Field(default_factory=list)
+    processed_payments: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
@@ -206,6 +207,7 @@ class CreditBatch(BaseModel):
     remaining_tokens: int
     expires_at: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    stripe_session_id: Optional[str] = None
 
 # Removed UserCredits class as it's now merged into User model
 

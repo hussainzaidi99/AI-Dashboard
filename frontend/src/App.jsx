@@ -10,6 +10,8 @@ import AIIntelligence from './pages/AIIntelligence';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chatbot from './components/ai/Chatbot';
+import Pricing from './pages/Pricing';
+import PaymentStatus from './pages/PaymentStatus';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
@@ -27,13 +29,11 @@ function App() {
 
   return (
     <Routes>
-      {/* Public Landing Page - accessible to everyone */}
       <Route
         path="/"
         element={<Landing />}
       />
 
-      {/* Public Auth Routes */}
       <Route
         path="/login"
         element={
@@ -55,7 +55,6 @@ function App() {
         }
       />
 
-      {/* Dashboard Protected Routes */}
       <Route
         path="/*"
         element={
@@ -66,7 +65,8 @@ function App() {
                 <Route path="/upload" element={<DataUpload />} />
                 <Route path="/intelligence" element={<AIIntelligence />} />
                 <Route path="/data" element={<RawData />} />
-                <Route path="/pricing" element={<div className="p-10 text-center"><h2 className="text-3xl font-bold">Pricing Plans</h2><p className="text-muted-foreground mt-2">Coming Soon...</p></div>} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/payment/success" element={<PaymentStatus />} />
                 <Route path="/templates" element={<div className="p-10 text-center"><h2 className="text-3xl font-bold">Dashboard Templates</h2><p className="text-muted-foreground mt-2">Coming Soon...</p></div>} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>

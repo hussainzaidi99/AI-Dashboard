@@ -26,7 +26,7 @@ if sys.version_info >= (3, 12):
 
 from app.config import settings
 from app.core.mongodb_conns import init_mongodb, check_mongodb_connection
-from app.api.v1 import upload, processing, charts, data, ai, export, auth, credits
+from app.api.v1 import upload, processing, charts, data, ai, export, auth, credits, payments
 from app.utils.cache import cache_manager
 
 # Configure logging
@@ -90,6 +90,7 @@ app.include_router(ai.router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI"]
 app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tags=["Export"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Auth"])
 app.include_router(credits.router, prefix=f"{settings.API_V1_PREFIX}/credits", tags=["Credits"])
+app.include_router(payments.router, prefix=f"{settings.API_V1_PREFIX}/payments", tags=["Payments"])
 
 
 @app.get("/")
