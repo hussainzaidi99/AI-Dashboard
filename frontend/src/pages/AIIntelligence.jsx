@@ -18,10 +18,10 @@ import { aiApi } from '../api/ai';
 
 const InsightCard = ({ title, description, icon: Icon, type }) => {
     const typeStyles = {
-        positive: 'border-white/20 bg-white/5 text-white',
-        warning: 'border-white/10 bg-white/[0.02] text-white/70',
-        neutral: 'border-white/5 bg-white/[0.01] text-white/50',
-        info: 'border-white/5 bg-white/[0.01] text-white/40'
+        positive: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400',
+        warning: 'border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400',
+        neutral: 'border-border bg-foreground/5 text-foreground',
+        info: 'border-border bg-foreground/[0.02] text-muted-foreground'
     };
 
     return (
@@ -30,10 +30,10 @@ const InsightCard = ({ title, description, icon: Icon, type }) => {
             className={`p-6 rounded-2xl border backdrop-blur-md ${typeStyles[type] || typeStyles.neutral} transition-all duration-300`}
         >
             <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-xl bg-white/5">
+                <div className="p-3 rounded-xl bg-foreground/5">
                     <Icon size={24} />
                 </div>
-                <div className="text-xs font-medium px-2 py-1 rounded-md bg-white/10 uppercase tracking-wider">
+                <div className="text-xs font-bold px-2 py-1 rounded-md bg-foreground/10 uppercase tracking-wider">
                     {type}
                 </div>
             </div>
@@ -44,10 +44,10 @@ const InsightCard = ({ title, description, icon: Icon, type }) => {
 };
 
 const SkeletonCard = () => (
-    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 animate-pulse">
-        <div className="w-12 h-12 bg-white/10 rounded-xl mb-4" />
-        <div className="h-6 w-2/3 bg-white/10 rounded mb-2" />
-        <div className="h-4 w-full bg-white/5 rounded" />
+    <div className="p-6 rounded-2xl border border-border bg-foreground/5 animate-pulse">
+        <div className="w-12 h-12 bg-foreground/10 rounded-xl mb-4" />
+        <div className="h-6 w-2/3 bg-foreground/10 rounded mb-2" />
+        <div className="h-4 w-full bg-foreground/10 rounded" />
     </div>
 );
 
@@ -94,11 +94,11 @@ const AIIntelligence = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 h-12 px-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold">
+                    <button className="flex items-center gap-2 h-12 px-5 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-border transition-all font-semibold text-foreground">
                         <Share2 size={18} />
                         Share Report
                     </button>
-                    <button className="flex items-center gap-2 h-12 px-5 rounded-xl bg-white text-black shadow-lg shadow-white/5 hover:bg-neutral-200 transition-all font-black">
+                    <button className="flex items-center gap-2 h-12 px-5 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/10 hover:opacity-90 transition-all font-black">
                         <Download size={18} />
                         Export PDF
                     </button>
@@ -107,12 +107,12 @@ const AIIntelligence = () => {
 
             {!hasActiveDataset ? (
                 <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6">
-                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-zinc-700">
+                    <div className="w-24 h-24 rounded-[2rem] bg-foreground/5 border border-border flex items-center justify-center text-muted-foreground">
                         <Brain size={48} />
                     </div>
                     <div className="max-w-md space-y-2">
                         <h3 className="text-2xl font-bold">Neural Engine Offline</h3>
-                        <p className="text-zinc-500 font-medium">
+                        <p className="text-muted-foreground font-medium">
                             Please upload a dataset to activate the AI-driven synthesis and discovery engines.
                         </p>
                     </div>
@@ -143,9 +143,9 @@ const AIIntelligence = () => {
                     {/* Main Intelligence Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Executive Summary */}
-                        <div className="glass-card p-10 rounded-[2.5rem] border border-white/10 flex flex-col h-full bg-gradient-to-br from-white/[0.02] to-transparent">
+                        <div className="glass-card p-10 rounded-[2.5rem] border border-border flex flex-col h-full bg-gradient-to-br from-foreground/[0.02] to-transparent">
                             <div className="flex items-center gap-4 mb-8">
-                                <div className="p-3.5 rounded-2xl bg-white/5 text-white shadow-xl shadow-black/20">
+                                <div className="p-3.5 rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/10">
                                     <FileText size={28} />
                                 </div>
                                 <h2 className="text-3xl font-black text-foreground tracking-tight">
@@ -161,8 +161,8 @@ const AIIntelligence = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-6 flex-1">
-                                    <div className="prose prose-invert max-w-none">
-                                        <div className="text-zinc-300 leading-relaxed font-medium">
+                                    <div className="prose prose-slate dark:prose-invert max-w-none">
+                                        <div className="text-foreground/80 leading-relaxed font-medium">
                                             {data?.summary ? (
                                                 <div className="markdown-summary">
                                                     <ReactMarkdown>
@@ -171,13 +171,13 @@ const AIIntelligence = () => {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
-                                                    <p className="font-bold text-white/90">
+                                                    <p className="font-bold text-foreground">
                                                         {isTextOnly
                                                             ? "Thematic extraction complete. I've parsed the document and am ready for your questions."
                                                             : "Deep analysis finished. Core structural patterns and key data distributions are mapped."
                                                         }
                                                     </p>
-                                                    <p className="text-sm opacity-70">
+                                                    <p className="text-sm opacity-70 text-muted-foreground">
                                                         Waiting for the final synthesis layers to load... Most insights are already accessible in the Intelligence Hub.
                                                     </p>
                                                 </div>
@@ -186,13 +186,13 @@ const AIIntelligence = () => {
                                     </div>
 
                                     {data?.insights?.length > 3 && (
-                                        <div className="pt-6 border-t border-white/5">
-                                            <h4 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4">Secondary Observations</h4>
+                                        <div className="pt-6 border-t border-border">
+                                            <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Secondary Observations</h4>
                                             <ul className="space-y-4">
                                                 {data.insights.slice(3, 5).map((insight, idx) => (
                                                     <li key={idx} className="flex gap-4 items-start group">
-                                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-white transition-colors flex-shrink-0" />
-                                                        <span className="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">
+                                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/20 group-hover:bg-primary transition-colors flex-shrink-0" />
+                                                        <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
                                                             {insight.title}: {insight.description}
                                                         </span>
                                                     </li>
@@ -203,16 +203,16 @@ const AIIntelligence = () => {
                                 </div>
                             )}
 
-                            <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
-                                <span className="text-xs font-bold text-zinc-600 uppercase tracking-tighter">AI Confidence Score</span>
-                                <span className="text-xl font-black text-white">{(Math.random() * (99.9 - 94.0) + 94.0).toFixed(1)}%</span>
+                            <div className="mt-10 pt-8 border-t border-border flex items-center justify-between">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">AI Confidence Score</span>
+                                <span className="text-xl font-black text-foreground">{(Math.random() * (99.9 - 94.0) + 94.0).toFixed(1)}%</span>
                             </div>
                         </div>
 
                         {/* Model Status & Performance */}
-                        <div className="glass-card p-10 rounded-[2.5rem] border border-white/10 flex flex-col h-full">
+                        <div className="glass-card p-10 rounded-[2.5rem] border border-border flex flex-col h-full bg-card">
                             <div className="flex items-center gap-4 mb-8">
-                                <div className="p-3.5 rounded-2xl bg-white/5 text-white">
+                                <div className="p-3.5 rounded-2xl bg-foreground/5 text-primary">
                                     <Sparkles size={28} />
                                 </div>
                                 <h2 className="text-3xl font-black text-foreground tracking-tight">Engine Performance</h2>
@@ -221,14 +221,14 @@ const AIIntelligence = () => {
                             <div className="space-y-8 flex-1">
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm items-end mb-1">
-                                        <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Processing Precision</span>
+                                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Processing Precision</span>
                                         <span className="text-lg font-black text-foreground">98.4%</span>
                                     </div>
-                                    <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-2.5 w-full bg-foreground/5 rounded-full overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: '98.4%' }}
-                                            className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                                            className="h-full bg-primary shadow-lg shadow-primary/20"
                                         />
                                     </div>
                                 </div>
@@ -248,13 +248,13 @@ const AIIntelligence = () => {
                                 </div>
 
                                 <div className="pt-6 grid grid-cols-2 gap-4">
-                                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.07] transition-all">
-                                        <p className="text-[10px] font-black text-zinc-600 mb-2 uppercase tracking-widest">Neural Latency</p>
-                                        <p className="text-3xl font-black tracking-tighter">142<span className="text-sm font-medium text-zinc-500 ml-1">ms</span></p>
+                                    <div className="p-6 rounded-2xl bg-foreground/5 border border-border hover:bg-foreground/[0.07] transition-all">
+                                        <p className="text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-widest">Neural Latency</p>
+                                        <p className="text-3xl font-black tracking-tighter text-foreground">142<span className="text-sm font-medium text-muted-foreground ml-1">ms</span></p>
                                     </div>
-                                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.07] transition-all">
-                                        <p className="text-[10px] font-black text-zinc-600 mb-2 uppercase tracking-widest">Throughput</p>
-                                        <p className="text-3xl font-black tracking-tighter">84<span className="text-sm font-medium text-zinc-500 ml-1">t/s</span></p>
+                                    <div className="p-6 rounded-2xl bg-foreground/5 border border-border hover:bg-foreground/[0.07] transition-all">
+                                        <p className="text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-widest">Throughput</p>
+                                        <p className="text-3xl font-black tracking-tighter text-foreground">84<span className="text-sm font-medium text-muted-foreground ml-1">t/s</span></p>
                                     </div>
                                 </div>
 
@@ -269,13 +269,13 @@ const AIIntelligence = () => {
                                 </div>
 
                                 {isTextOnly && (
-                                    <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 flex flex-col items-center text-center space-y-4">
-                                        <Brain size={32} className="text-white" />
-                                        <p className="text-sm font-bold text-white">Need deeper analysis?</p>
-                                        <p className="text-xs text-zinc-400">Ask the Intelligence Assistant specific questions about the document content.</p>
+                                    <div className="p-6 rounded-[2rem] bg-foreground/5 border border-border flex flex-col items-center text-center space-y-4">
+                                        <Brain size={32} className="text-primary" />
+                                        <p className="text-sm font-bold text-foreground">Need deeper analysis?</p>
+                                        <p className="text-xs text-muted-foreground">Ask the Intelligence Assistant specific questions about the document content.</p>
                                         <button
                                             onClick={() => document.getElementById('chatbot-toggle')?.click()}
-                                            className="px-6 py-2 rounded-xl bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-all"
+                                            className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all font-black shadow-lg shadow-primary/10"
                                         >
                                             Start Q&A
                                         </button>

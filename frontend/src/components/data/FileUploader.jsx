@@ -107,7 +107,9 @@ const FileUploader = ({ onUploadSuccess }) => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current.click()}
-                        className={`cursor-pointer group relative overflow-hidden rounded-[2.5rem] border-2 border-dashed transition-all duration-300 p-12 text-center ${isDragging ? 'border-white bg-white/10' : 'border-white/10 hover:border-white/40 hover:bg-white/5'
+                        className={`cursor-pointer group relative overflow-hidden rounded-[2.5rem] border-2 border-dashed transition-all duration-300 p-12 text-center ${isDragging
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/40 hover:bg-foreground/[0.02]'
                             }`}
                     >
                         <input
@@ -119,15 +121,14 @@ const FileUploader = ({ onUploadSuccess }) => {
                         />
 
                         <div className="relative z-10">
-                            <div className={`w-20 h-20 rounded-3xl bg-white/10 flex items-center justify-center mx-auto mb-6 transition-transform duration-500 ${isDragging ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                <Upload className="text-white" size={36} />
+                            <div className={`w-20 h-20 rounded-3xl bg-foreground/5 flex items-center justify-center mx-auto mb-6 transition-transform duration-500 ${isDragging ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                <Upload className="text-primary" size={36} />
                             </div>
-                            <h3 className="text-2xl font-bold mb-2">Drop your data here</h3>
+                            <h3 className="text-2xl font-bold mb-2 text-foreground">Drop your data here</h3>
                             <p className="text-muted-foreground mb-6">Support for CSV, Excel, PDF, Word, Text, Images and Zip archives</p>
-
                             <div className="flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
                                 <span>Max 100MB</span>
-                                <span className="w-1 h-1 rounded-full bg-white/20" />
+                                <span className="w-1 h-1 rounded-full bg-foreground/20" />
                                 <span>AI-Powered Processing</span>
                             </div>
                         </div>
@@ -147,9 +148,9 @@ const FileUploader = ({ onUploadSuccess }) => {
                     >
                         <div className="relative w-24 h-24 mx-auto mb-8">
                             <svg className="w-full h-full" viewBox="0 0 100 100">
-                                <circle className="text-white/5 stroke-current" strokeWidth="8" fill="transparent" r="42" cx="50" cy="50" />
+                                <circle className="text-foreground/5 stroke-current" strokeWidth="8" fill="transparent" r="42" cx="50" cy="50" />
                                 <motion.circle
-                                    className="text-white stroke-current"
+                                    className="text-primary stroke-current"
                                     strokeWidth="8"
                                     strokeLinecap="round"
                                     fill="transparent"
@@ -167,14 +168,14 @@ const FileUploader = ({ onUploadSuccess }) => {
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 {uploadState === 'uploading' ? (
-                                    <span className="text-xl font-bold">{progress}%</span>
+                                    <span className="text-xl font-bold text-foreground">{progress}%</span>
                                 ) : (
-                                    <Loader2 className="animate-spin text-white" size={32} />
+                                    <Loader2 className="animate-spin text-primary" size={32} />
                                 )}
                             </div>
                         </div>
 
-                        <h3 className="text-2xl font-bold mb-2">
+                        <h3 className="text-2xl font-bold mb-2 text-foreground">
                             {uploadState === 'uploading' ? 'Uploading...' : 'AI Analysis in Progress'}
                         </h3>
                         <p className="text-muted-foreground mb-6 font-medium">
@@ -186,9 +187,9 @@ const FileUploader = ({ onUploadSuccess }) => {
                                 <span>Status</span>
                                 <span>{uploadState === 'uploading' ? 'Saving to server' : 'Extracting data entities'}</span>
                             </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden">
                                 <motion.div
-                                    className="h-full bg-white"
+                                    className="h-full bg-primary"
                                     animate={{
                                         width: uploadState === 'uploading' ? `${progress}%` : '100%',
                                         opacity: uploadState === 'processing' ? [0.4, 1, 0.4] : 1
@@ -212,7 +213,7 @@ const FileUploader = ({ onUploadSuccess }) => {
                         <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
                             <CheckCircle2 className="text-emerald-500" size={40} />
                         </div>
-                        <h3 className="text-2xl font-bold mb-2 text-emerald-400">
+                        <h3 className="text-2xl font-bold mb-2 text-emerald-600 dark:text-emerald-400">
                             {isTextOnly ? 'Document Processed!' : 'Analysis Complete!'}
                         </h3>
                         <p className="text-muted-foreground mb-8">
@@ -222,12 +223,12 @@ const FileUploader = ({ onUploadSuccess }) => {
                             }
                         </p>
                         <div className="flex gap-4 justify-center">
-                            <button onClick={reset} className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all font-medium">
+                            <button onClick={reset} className="px-6 py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 text-foreground transition-all font-medium">
                                 Upload Another
                             </button>
                             <button
                                 onClick={() => navigate(isTextOnly ? '/intelligence' : '/dashboard')}
-                                className="px-6 py-3 rounded-2xl bg-white text-black font-black shadow-xl hover:bg-neutral-200 transition-all"
+                                className="px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-xl hover:opacity-90 transition-all"
                             >
                                 {isTextOnly ? 'Ask AI' : 'View Insights'}
                             </button>
@@ -245,8 +246,8 @@ const FileUploader = ({ onUploadSuccess }) => {
                         <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-6">
                             <AlertCircle className="text-rose-500" size={40} />
                         </div>
-                        <h3 className="text-2xl font-bold mb-2 text-rose-400">Upload Failed</h3>
-                        <p className="text-rose-200/60 mb-8 max-w-sm mx-auto">
+                        <h3 className="text-2xl font-bold mb-2 text-rose-600 dark:text-rose-400">Upload Failed</h3>
+                        <p className="text-muted-foreground/60 mb-8 max-w-sm mx-auto">
                             {error}
                         </p>
                         <button onClick={reset} className="px-8 py-3 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all">

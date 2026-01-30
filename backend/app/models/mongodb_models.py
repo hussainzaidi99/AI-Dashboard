@@ -43,8 +43,8 @@ class User(Document):
     active_balance: int = 0
     batches: List["CreditBatch"] = Field(default_factory=list)
     processed_payments: List[str] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @before_event([Replace, SaveChanges, Insert])
     def update_and_recalculate(self):
@@ -91,7 +91,7 @@ class FileUpload(Document):
     file_type: str
     file_path: str
     status: FileStatus = FileStatus.UPLOADED
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     processed_at: Optional[datetime] = None
 
     class Settings:
@@ -112,7 +112,7 @@ class ProcessingJob(Document):
     job_metadata: Dict[str, Any] = Field(default_factory=dict)
     error_message: Optional[str] = None
     warnings: List[str] = Field(default_factory=list)
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
 
     class Settings:
@@ -129,13 +129,13 @@ class ChartData(Document):
     description: Optional[str] = None
     config: Dict[str, Any] = Field(default_factory=dict)
     chart_json: Dict[str, Any]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @before_event([Replace, SaveChanges, Insert])
     def update_timestamp(self):
         """Update updated_at timestamp on save"""
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     class Settings:
         name = "charts"
@@ -149,13 +149,13 @@ class Dashboard(Document):
     description: Optional[str] = None
     layout: Dict[str, Any] = Field(default_factory=dict)
     chart_ids: List[str] = Field(default_factory=list)  # List of ChartData.chart_id
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @before_event([Replace, SaveChanges, Insert])
     def update_timestamp(self):
         """Update updated_at timestamp on save"""
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     class Settings:
         name = "dashboards"
@@ -167,7 +167,7 @@ class DataProfile(Document):
     file_id: Indexed(str)
     user_id: Optional[Indexed(str)] = None
     profile_data: Dict[str, Any]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "data_profiles"
@@ -184,7 +184,7 @@ class QualityReport(Document):
     validity_score: float
     uniqueness_score: float
     issues: List[Dict[str, Any]] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "quality_reports"
@@ -206,7 +206,7 @@ class CreditBatch(BaseModel):
     amount_tokens: int
     remaining_tokens: int
     expires_at: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     stripe_session_id: Optional[str] = None
 
 # Removed UserCredits class as it's now merged into User model
@@ -221,7 +221,7 @@ class TokenUsage(Document):
     output_tokens: int
     total_tokens: int
     cost_estimated: float = 0.0 # Optional: compute cost at logging time
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "token_usage"

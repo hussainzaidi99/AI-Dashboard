@@ -92,11 +92,16 @@ async def confirm_payment(
 
         # 2. Check if already processed (Deduplication)
         if session_id in current_user.processed_payments:
+            # If the user reloads very quickly, the first request might still be saving.
+            # We refresh the user state from DB to get the most accurate balance.
+            await current_user.fetch_link("batches")
+            token_amount = int(session.metadata.get("token_amount", 0))
             return {
                 "success": True,
                 "already_processed": True,
                 "message": "Payment already processed",
-                "active_balance": current_user.active_balance
+                "added_tokens": token_amount,
+                "new_balance": current_user.active_balance
             }
 
         # 3. Extract metadata

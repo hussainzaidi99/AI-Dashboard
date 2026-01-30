@@ -31,8 +31,8 @@ const Overview = () => {
     return (
         <div className="space-y-8 pb-20">
             {/* Minimal Dashboard Header */}
-            <header className="pb-4 border-b border-white/5">
-                <h1 className="text-4xl font-bold tracking-tight text-white/90">
+            <header className="pb-4 border-b border-foreground/5">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground">
                     {hasActiveDataset ? 'Intelligence Snapshot' : 'Global Operations Hub'}
                 </h1>
             </header>
@@ -101,12 +101,12 @@ const Overview = () => {
                         );
                     })
                 ) : (
-                    <div className="col-span-full h-[500px] glass-card rounded-[2.5rem] p-8 flex flex-col items-center justify-center border-2 border-dashed border-white/5 group cursor-pointer hover:border-primary/20 transition-all">
+                    <div className="col-span-full h-[500px] glass-card rounded-[2.5rem] p-8 flex flex-col items-center justify-center border-2 border-dashed border-foreground/10 group cursor-pointer hover:border-primary/20 transition-all">
                         <div className="text-center group-hover:scale-105 transition-transform duration-500">
                             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6 text-primary shadow-[0_0_30px_rgba(59,130,246,0.15)]">
                                 <Activity size={36} />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">Neural Link Pending</h3>
+                            <h3 className="text-xl font-bold mb-2 text-foreground">Neural Link Pending</h3>
                             <p className="text-muted-foreground max-w-sm mx-auto">
                                 Feed the system a dataset to activate the intelligence core and synthesize your dashboard.
                             </p>

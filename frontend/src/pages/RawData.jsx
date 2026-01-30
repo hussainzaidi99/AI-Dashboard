@@ -38,7 +38,7 @@ const RawData = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-[0.2em] shadow-inner">
+                    <div className="px-4 py-2.5 rounded-xl bg-foreground/[0.03] border border-border text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] shadow-inner">
                         Schema Validated
                     </div>
                 </div>
@@ -48,13 +48,13 @@ const RawData = () => {
                 <div className="glass-card rounded-[2.5rem] p-10 min-h-[600px]">
                     {isTextOnly ? (
                         <div className="space-y-6">
-                            <div className="flex items-center gap-3 pb-6 border-b border-white/5">
+                            <div className="flex items-center gap-3 pb-6 border-b border-border">
                                 <div className="p-2 rounded-lg bg-primary/10 text-primary">
                                     <FileText size={20} />
                                 </div>
-                                <h3 className="text-xl font-bold">Extracted Text Content</h3>
+                                <h3 className="text-xl font-bold text-foreground">Extracted Text Content</h3>
                             </div>
-                            <div className="prose prose-invert max-w-none">
+                            <div className="prose prose-slate dark:prose-invert max-w-none">
                                 <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed font-medium">
                                     {textContent || "No text content available."}
                                 </p>
@@ -70,7 +70,7 @@ const RawData = () => {
                 </div>
             ) : (
                 <div className="h-[60vh] glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center space-y-6">
-                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground/30">
+                    <div className="w-24 h-24 rounded-[2rem] bg-foreground/5 border border-border flex items-center justify-center text-muted-foreground/30">
                         <Database size={48} />
                     </div>
                     <div className="max-w-sm space-y-2">
@@ -81,7 +81,7 @@ const RawData = () => {
                     </div>
                     <button
                         onClick={() => navigate('/upload')}
-                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-white text-black font-extrabold transition-all shadow-xl hover:bg-neutral-200"
+                        className="group flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-extrabold transition-all shadow-xl hover:opacity-90"
                     >
                         Go to Ingestion Zone
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

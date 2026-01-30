@@ -16,6 +16,8 @@ const queryClient = new QueryClient({
 
 import { DatasetProvider } from './context/DatasetContext';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+
 
 import { BrowserRouter } from 'react-router-dom';
 
@@ -34,9 +36,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <AuthProvider>
-              <DatasetProvider>
-                <App />
-              </DatasetProvider>
+              <ThemeProvider>
+                <DatasetProvider>
+                  <App />
+                </DatasetProvider>
+              </ThemeProvider>
             </AuthProvider>
           </BrowserRouter>
         </QueryClientProvider>
@@ -45,9 +49,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <DatasetProvider>
-              <App />
-            </DatasetProvider>
+            <ThemeProvider>
+              <DatasetProvider>
+                <App />
+              </DatasetProvider>
+            </ThemeProvider>
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>

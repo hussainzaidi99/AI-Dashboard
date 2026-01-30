@@ -77,8 +77,8 @@ const DataUpload = () => {
 
             {/* Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-white/5">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-border bg-card">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
                         <FileText size={24} />
                     </div>
                     <h3 className="text-lg font-bold">Smart Extraction</h3>
@@ -87,8 +87,8 @@ const DataUpload = () => {
                     </p>
                 </div>
 
-                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-white/5">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-border bg-card">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500">
                         <History size={24} />
                     </div>
                     <h3 className="text-lg font-bold">Version Tracking</h3>
@@ -97,8 +97,8 @@ const DataUpload = () => {
                     </p>
                 </div>
 
-                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-white/5">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <div className="glass-card p-8 rounded-[2rem] space-y-4 border-border bg-card">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                         <Info size={24} />
                     </div>
                     <h3 className="text-lg font-bold">Privacy First</h3>
@@ -113,7 +113,7 @@ const DataUpload = () => {
                 <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold flex items-center gap-3">
                         Recently Processed
-                        <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold border border-white/10 uppercase tracking-widest">Live</span>
+                        <span className="px-2 py-0.5 rounded-full bg-foreground/5 text-[10px] font-bold border border-border uppercase tracking-widest text-primary">Live</span>
                     </h3>
                     <button
                         onClick={() => refetch()}
@@ -125,7 +125,7 @@ const DataUpload = () => {
 
                 <div className="grid grid-cols-1 gap-4">
                     {!recentFiles || recentFiles.length === 0 ? (
-                        <div className="glass-card overflow-hidden rounded-[2rem] border-white/5">
+                        <div className="glass-card overflow-hidden rounded-[2rem] border-border bg-card/50">
                             <div className="px-8 py-10 text-center text-muted-foreground">
                                 <p className="font-medium">No recent uploads found.</p>
                                 <p className="text-sm">Start by dropping a file above.</p>
@@ -140,22 +140,22 @@ const DataUpload = () => {
                                 role="button"
                                 tabIndex={0}
                                 className={`flex items-center justify-between p-6 glass-card rounded-2xl border transition-all text-left group cursor-pointer ${activeFileId === file.file_id
-                                    ? 'border-white bg-white/5 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
-                                    : 'border-white/5 hover:border-white/10 hover:bg-white/5'
+                                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
+                                    : 'border-border hover:border-primary/20 hover:bg-foreground/[0.02]'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activeFileId === file.file_id ? 'bg-white text-black' : 'bg-white/5 text-muted-foreground group-hover:text-white'
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activeFileId === file.file_id ? 'bg-primary text-primary-foreground' : 'bg-foreground/5 text-muted-foreground group-hover:text-foreground'
                                         }`}>
                                         <FileText size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-sm mb-1">{file.filename}</h4>
+                                        <h4 className="font-bold text-sm mb-1 text-foreground">{file.filename}</h4>
                                         <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
                                             <span>{file.file_size_formatted || formatFileSize(file.file_size)}</span>
-                                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                                            <span className="w-1 h-1 rounded-full bg-foreground/20" />
                                             <span>{file.file_type || 'Document'}</span>
-                                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                                            <span className="w-1 h-1 rounded-full bg-foreground/20" />
                                             <span>{format(new Date(file.uploaded_at || Date.now()), 'MMM d, yyyy')}</span>
                                         </div>
                                     </div>
@@ -163,9 +163,9 @@ const DataUpload = () => {
 
                                 <div className="flex items-center gap-4">
                                     {activeFileId === file.file_id ? (
-                                        <div className="flex items-center gap-2 text-white">
+                                        <div className="flex items-center gap-2 text-primary">
                                             <span className="text-[10px] font-bold uppercase tracking-widest">Active</span>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                         </div>
                                     ) : (
                                         <span className="text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">

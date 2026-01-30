@@ -22,8 +22,8 @@ const SidebarItem = ({ icon: Icon, label, to, isCollapsed }) => (
         className={({ isActive }) => `
             w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-4 py-3 rounded-xl transition-all duration-200 group
             ${isActive
-                ? 'bg-white text-black font-bold shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-                : 'text-muted-foreground hover:bg-white/5 hover:text-foreground shadow-none'
+                ? 'bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/10'
+                : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground shadow-none'
             }
         `}
     >
@@ -51,22 +51,22 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     ];
 
     return (
-        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} h-full flex flex-col bg-[#050505]/95 backdrop-blur-3xl border-r border-white/5 z-20 transition-all duration-300`}>
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} h-full flex flex-col bg-background/95 backdrop-blur-3xl border-r border-border z-20 transition-all duration-300 relative`}>
             {/* Toggle Button */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-110 transition-all z-30"
+                className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:scale-110 transition-all z-30"
             >
                 {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
 
             <div className={`p-6 ${isCollapsed ? 'px-4' : ''}`}>
                 <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center mb-6' : 'mb-8'}`}>
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.1)] shrink-0">
-                        <BarChart3 className="text-black" size={24} strokeWidth={2.5} />
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+                        <BarChart3 className="text-primary-foreground" size={24} strokeWidth={2.5} />
                     </div>
                     {!isCollapsed && (
-                        <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent truncate">
+                        <h1 className="text-xl font-bold tracking-tight text-foreground truncate">
                             AI Analytics
                         </h1>
                     )}
@@ -86,7 +86,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             </div>
 
             <div className={`mt-auto p-6 ${isCollapsed ? 'px-4' : ''} space-y-2`}>
-                <div className="h-px bg-white/5 my-4" />
+                <div className="h-px bg-border my-4" />
                 {footerItems.map((item) => (
                     <SidebarItem
                         key={item.id}
@@ -106,14 +106,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 </button>
 
                 <div className="mt-8 p-4 rounded-2xl glass-card text-xs">
-                    <div className="flex items-center gap-2 mb-2 text-white">
-                        <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    <div className="flex items-center gap-2 mb-2 text-foreground">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                         <span className="font-semibold uppercase tracking-wider">Premium Plan</span>
                     </div>
                     <p className="text-muted-foreground leading-relaxed">
                         Your subscription will renew based on the expiry date of your current plan.
                     </p>
-                    <Link to="/pricing" className="mt-3 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors font-medium flex items-center justify-center">
+                    <Link to="/pricing" className="mt-3 w-full py-2 bg-foreground/5 hover:bg-foreground/10 rounded-lg transition-colors font-medium flex items-center justify-center text-foreground">
                         Manage Credits
                     </Link>
                 </div>

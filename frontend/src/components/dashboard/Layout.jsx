@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import LightRays from '../backgrounds/LightRays';
+import { useTheme } from '../../context/ThemeContext';
 
 const Layout = ({ children }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const { theme } = useTheme();
 
     return (
-        <div className="flex h-screen w-screen bg-[#000000] text-foreground overflow-hidden font-sans selection:bg-white/20">
+        <div className={`flex h-screen w-screen text-foreground overflow-hidden font-sans selection:bg-white/20 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#000000]' : 'bg-[#f8fafc]'}`}>
             {/* Background Effect - Enhanced Silver Glow */}
             <div className="fixed inset-0 z-0 opacity-85">
                 <LightRays
                     raysOrigin="top-center"
-                    raysColor="#f8fafc"
+                    raysColor={theme === 'dark' ? '#f8fafc' : '#ffffff'}
                     raysSpeed={0.4}
                     lightSpread={0.8}
                     rayLength={2.2}

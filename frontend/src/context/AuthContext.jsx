@@ -11,13 +11,16 @@ export const AuthProvider = ({ children }) => {
     const [activeBalance, setActiveBalance] = useState(0);
 
     const refreshCredits = async () => {
-        if (!token) return;
+        if (!token) return 0;
         try {
             const data = await creditsApi.getCredits();
             // The backend returns 'active_tokens'
-            setActiveBalance(data.active_tokens || 0);
+            const balance = data.active_tokens || 0;
+            setActiveBalance(balance);
+            return balance;
         } catch (err) {
             console.error('Failed to refresh credits:', err);
+            return activeBalance;
         }
     };
 
