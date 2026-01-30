@@ -106,6 +106,12 @@ class Settings:
     STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     
+    # ==================== Email Configuration ====================
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "noreply@support.vectorlabzfzellc.com")
+    EMAIL_VERIFICATION_EXPIRY_MINUTES: int = int(os.getenv("EMAIL_VERIFICATION_EXPIRY_MINUTES", "15"))
+    PASSWORD_RESET_EXPIRY_MINUTES: int = int(os.getenv("PASSWORD_RESET_EXPIRY_MINUTES", "15"))
+    
     # ==================== Feature Flags ====================
     ENABLE_AI_RECOMMENDATIONS: bool = os.getenv("ENABLE_AI_RECOMMENDATIONS", "False").lower() == "true"
     ENABLE_EXPORT_PDF: bool = os.getenv("ENABLE_EXPORT_PDF", "False").lower() == "true"

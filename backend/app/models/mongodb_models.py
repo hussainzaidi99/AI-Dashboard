@@ -40,6 +40,7 @@ class User(Document):
     hashed_password: str
     role: UserRole = UserRole.USER
     is_active: bool = True
+    is_verified: bool = False  # Email verification status
     active_balance: int = 0
     batches: List["CreditBatch"] = Field(default_factory=list)
     processed_payments: List[str] = Field(default_factory=list)
@@ -226,3 +227,20 @@ class TokenUsage(Document):
     class Settings:
         name = "token_usage"
         indexes = ["user_id", "timestamp", "endpoint"]
+
+class EmailVerification(Document):
+    """Model for email verification codes"""
+    verification_id: Indexed(str, unique=True) = Field(default_factory=generate_uuid)
+    user_id: Indexed(str)
+    email: Indexed(str)
+    code: str  # 6-digit verification code
+    type: str  # "email_verification" or "password_reset"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime
+    is_used: bool = False
+    attempts: int = 0
+    verified_at: Optional[datetime] = None
+
+    class Settings:
+        name = "email_verifications"
+        indexes = ["email", "type", "is_used", "expires_at"]

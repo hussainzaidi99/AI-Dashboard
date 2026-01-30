@@ -26,6 +26,7 @@ class UserResponse(UserBase):
     """User response schema"""
     user_id: str
     is_active: bool
+    is_verified: bool
     created_at: datetime
     updated_at: datetime
 
@@ -50,6 +51,41 @@ class TokenPayload(BaseModel):
 class GoogleLoginRequest(BaseModel):
     """Request model for Google login"""
     token: str
+
+
+# ==================== Email Verification Schemas ====================
+
+class EmailVerificationRequest(BaseModel):
+    """Request model for email verification"""
+    email: str
+    code: str
+
+class ResendVerificationRequest(BaseModel):
+    """Request model for resending verification code"""
+    email: str
+
+class MessageResponse(BaseModel):
+    """Generic message response"""
+    message: str
+    success: bool = True
+
+
+# ==================== Password Reset Schemas ====================
+
+class PasswordResetSendRequest(BaseModel):
+    """Request model for sending password reset code"""
+    email: str
+
+class PasswordResetVerifyRequest(BaseModel):
+    """Request model for verifying password reset code"""
+    email: str
+    code: str
+
+class PasswordResetConfirmRequest(BaseModel):
+    """Request model for confirming password reset"""
+    email: str
+    code: str
+    new_password: str
 
 
 # ==================== File Upload Schemas ====================

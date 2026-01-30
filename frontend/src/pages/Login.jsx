@@ -120,6 +120,15 @@ const Login = ({ onToggle }) => {
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
+                        <div className="text-right">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/forgot-password')}
+                                className="text-sm text-primary font-bold hover:underline underline-offset-4"
+                            >
+                                Forgot Password?
+                            </button>
+                        </div>
                     </div>
 
                     <button

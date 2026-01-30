@@ -9,6 +9,8 @@ import RawData from './pages/RawData';
 import AIIntelligence from './pages/AIIntelligence';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import EmailVerification from './pages/EmailVerification';
+import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/ai/Chatbot';
 import Pricing from './pages/Pricing';
 import PaymentStatus from './pages/PaymentStatus';
@@ -53,6 +55,18 @@ function App() {
               : <Navigate to="/login" replace />
           )
         }
+      />
+
+      {/* Email Verification - Public Route */}
+      <Route
+        path="/verify-email"
+        element={<EmailVerification />}
+      />
+
+      {/* Forgot Password - Public Route */}
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
       />
 
       <Route

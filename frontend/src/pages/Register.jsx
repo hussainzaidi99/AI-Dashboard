@@ -24,7 +24,8 @@ const Register = ({ onToggle }) => {
         setLoading(true);
         try {
             await register(email, password, fullName);
-            navigate('/dashboard');
+            // Navigate to email verification page with email in state
+            navigate('/verify-email', { state: { email } });
         } catch (err) {
             setError(err.response?.data?.detail || 'Registration failed. Please try again.');
         } finally {

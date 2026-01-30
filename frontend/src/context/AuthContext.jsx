@@ -93,9 +93,79 @@ export const AuthProvider = ({ children }) => {
                 full_name: fullName,
                 role: 'user'
             });
-            return await login(email, password);
+            // Don't auto-login, user needs to verify email first
+            return true;
         } catch (err) {
             console.error('Registration error:', err);
+            throw err;
+        }
+    };
+
+    const verifyEmail = async (email, code) => {
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/verify-email`, {
+                email,
+                code
+            });
+            const newToken = response.data.access_token;
+            setToken(newToken);
+            sessionStorage.setItem('token', newToken);
+            setUser(response.data.user);
+            sessionStorage.setItem('user', JSON.stringify(response.data.user));
+            return true;
+        } catch (err) {
+            console.error('Email verification error:', err);
+            throw err;
+        }
+    };
+
+    const resendVerification = async (email) => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/auth/resend-verification`, {
+                email
+            });
+            return true;
+        } catch (err) {
+            console.error('Resend verification error:', err);
+            throw err;
+        }
+    };
+
+    const requestPasswordReset = async (email) => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/auth/password-reset/send-code`, {
+                email
+            });
+            return true;
+        } catch (err) {
+            console.error('Password reset request error:', err);
+            throw err;
+        }
+    };
+
+    const verifyResetCode = async (email, code) => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/auth/password-reset/verify-code`, {
+                email,
+                code
+            });
+            return true;
+        } catch (err) {
+            console.error('Reset code verification error:', err);
+            throw err;
+        }
+    };
+
+    const confirmPasswordReset = async (email, code, newPassword) => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/auth/password-reset/confirm`, {
+                email,
+                code,
+                new_password: newPassword
+            });
+            return true;
+        } catch (err) {
+            console.error('Password reset confirmation error:', err);
             throw err;
         }
     };
@@ -120,6 +190,11 @@ export const AuthProvider = ({ children }) => {
             googleLogin,
             logout,
             register,
+            verifyEmail,
+            resendVerification,
+            requestPasswordReset,
+            verifyResetCode,
+            confirmPasswordReset,
             isAuthenticated: !!token
         }}>
             {children}
