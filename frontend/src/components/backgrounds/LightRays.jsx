@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Renderer, Program, Triangle, Mesh } from 'ogl';
+import { useTheme } from '../../context/ThemeContext';
 
 const DEFAULT_COLOR = '#ffffff';
 
@@ -45,6 +46,7 @@ const LightRays = ({
     distortion = 0.0,
     className = ''
 }) => {
+    const { theme } = useTheme();
     const containerRef = useRef(null);
     const uniformsRef = useRef(null);
     const rendererRef = useRef(null);
@@ -75,7 +77,7 @@ const LightRays = ({
                 observerRef.current = null;
             }
         };
-    }, []);
+    }, [theme]);
 
     useEffect(() => {
         if (!isVisible || !containerRef.current) return;
@@ -327,6 +329,7 @@ void main() {
         };
     }, [
         isVisible,
+        theme,
         raysOrigin,
         raysColor,
         raysSpeed,
@@ -391,6 +394,8 @@ void main() {
             return () => window.removeEventListener('mousemove', handleMouseMove);
         }
     }, [followMouse]);
+
+    if (theme === 'light') return null;
 
     return <div ref={containerRef} className={`light-rays-container ${className}`.trim()} />;
 };

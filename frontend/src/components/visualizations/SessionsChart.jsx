@@ -60,7 +60,7 @@ const SessionsChart = ({ title, value, trend, chartData: inputChartData, loading
 
         const xLabel = inputChartData.layout?.xaxis?.title?.text || 'Time';
         return { labels, datasets, xLabel };
-    }, [inputChartData]);
+    }, [inputChartData, theme]);
 
     const plotlyConfig = useMemo(() => {
         if (!processedData) return null;
@@ -103,7 +103,7 @@ const SessionsChart = ({ title, value, trend, chartData: inputChartData, loading
         };
 
         return { data, layout };
-    }, [processedData]);
+    }, [processedData, theme]);
 
     if (loading || !processedData) {
         return (

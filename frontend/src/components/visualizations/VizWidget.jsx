@@ -60,9 +60,21 @@ const VizWidget = ({ config, title, description, loading, error }) => {
                 bordercolor: theme === 'dark' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(37, 99, 235, 0.2)',
                 font: { color: theme === 'dark' ? '#f8fafc' : '#0f172a', size: 11 },
                 namelength: -1
+            },
+            xaxis: {
+                gridcolor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)',
+                tickfont: { color: theme === 'dark' ? 'rgba(226, 232, 240, 0.5)' : 'rgba(15, 23, 42, 0.5)', size: 9 },
+                zerolinecolor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(15, 23, 42, 0.1)',
+                automargin: true
+            },
+            yaxis: {
+                gridcolor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)',
+                tickfont: { color: theme === 'dark' ? 'rgba(226, 232, 240, 0.5)' : 'rgba(15, 23, 42, 0.5)', size: 9 },
+                zerolinecolor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(15, 23, 42, 0.1)',
+                automargin: true
             }
         };
-    }, [config]);
+    }, [config, theme]);
 
     const plotlyData = useMemo(() => {
         if (!config || !config.data) return [];

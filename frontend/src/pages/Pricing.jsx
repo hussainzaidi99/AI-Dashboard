@@ -177,7 +177,7 @@ const Pricing = () => {
                             <Info className="w-6 h-6" />
                         </div>
                         <h4 className="font-bold mb-2">Expiry</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">Paid credits will expire after the given time. For extended use, you can purchase premium plan which last upto 3 Months.</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">Paid credits will expire after the given time. For extended use, you can purchase premium plan which lasts upto 3 Months.</p>
                     </div>
                 </div>
             </div>
