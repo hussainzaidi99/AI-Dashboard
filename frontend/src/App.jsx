@@ -14,6 +14,9 @@ import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/ai/Chatbot';
 import Pricing from './pages/Pricing';
 import PaymentStatus from './pages/PaymentStatus';
+import Docs from './pages/Docs';
+import Settings from './pages/Settings';
+import About from './pages/About';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
@@ -81,7 +84,9 @@ function App() {
                 <Route path="/data" element={<RawData />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/payment/success" element={<PaymentStatus />} />
-                <Route path="/templates" element={<div className="p-10 text-center"><h2 className="text-3xl font-bold">Dashboard Templates</h2><p className="text-muted-foreground mt-2">Coming Soon...</p></div>} />
+                <Route path="/docs" element={<Docs />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/about" element={<About />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
               <Chatbot />

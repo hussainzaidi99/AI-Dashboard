@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowUpRight, BarChart3, Search, Activity, Zap, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import LightRays from '../components/backgrounds/LightRays';
@@ -204,7 +204,7 @@ const Landing = () => {
                     <div className="flex gap-10 text-sm font-semibold text-muted-foreground">
                         <button className="hover:text-foreground transition-colors">Privacy</button>
                         <button className="hover:text-foreground transition-colors">Terms</button>
-                        <button className="hover:text-foreground transition-colors">Docs</button>
+                        <Link to="/docs" className="hover:text-foreground transition-colors">Docs</Link>
                     </div>
                 </div>
             </footer>

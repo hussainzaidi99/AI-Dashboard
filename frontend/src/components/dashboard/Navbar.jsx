@@ -48,7 +48,7 @@ const Navbar = () => {
                 {/* Navigation Links */}
                 <nav className="hidden xl:flex items-center gap-6">
                     <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-                    <Link to="/templates" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Dashboard Templates</Link>
+                    <Link to="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Docs</Link>
                 </nav>
             </div>
 

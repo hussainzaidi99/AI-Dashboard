@@ -46,6 +46,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     ];
 
     const footerItems = [
+        { id: 'docs', label: 'Documentation', icon: Info, to: '/docs' },
         { id: 'settings', label: 'Settings', icon: Settings, to: '/settings' },
         { id: 'about', label: 'About', icon: Info, to: '/about' },
     ];
