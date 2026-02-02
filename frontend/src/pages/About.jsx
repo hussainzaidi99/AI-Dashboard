@@ -86,9 +86,6 @@ const About = () => {
                 </div>
             </motion.div>
 
-            <footer className="pt-2 text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground/40">
-                © 2026 SabasoftGames. All Rights Reserved.
-            </footer>
         </div>
     );
 };

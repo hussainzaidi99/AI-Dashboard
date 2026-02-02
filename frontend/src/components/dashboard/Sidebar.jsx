@@ -46,7 +46,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     ];
 
     const footerItems = [
-        { id: 'docs', label: 'Documentation', icon: Info, to: '/docs' },
         { id: 'settings', label: 'Settings', icon: Settings, to: '/settings' },
         { id: 'about', label: 'About', icon: Info, to: '/about' },
     ];
@@ -106,18 +105,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     {!isCollapsed && <span className="font-medium text-sm">Logout Session</span>}
                 </button>
 
-                <div className="mt-8 p-4 rounded-2xl glass-card text-xs">
-                    <div className="flex items-center gap-2 mb-2 text-foreground">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        <span className="font-semibold uppercase tracking-wider">Premium Plan</span>
+                {!isCollapsed && (
+                    <div className="mt-4 p-4 rounded-2xl glass-card text-xs">
+                        <div className="flex items-center gap-2 mb-2 text-foreground">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                            <span className="font-semibold uppercase tracking-wider">Premium Plan</span>
+                        </div>
+                        <p className="text-muted-foreground leading-relaxed">
+                            Your subscription will renew based on the expiry date of your current plan.
+                        </p>
+                        <Link to="/pricing" className="mt-3 w-full py-2 bg-foreground/5 hover:bg-foreground/10 rounded-lg transition-colors font-medium flex items-center justify-center text-foreground">
+                            Manage Credits
+                        </Link>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed">
-                        Your subscription will renew based on the expiry date of your current plan.
-                    </p>
-                    <Link to="/pricing" className="mt-3 w-full py-2 bg-foreground/5 hover:bg-foreground/10 rounded-lg transition-colors font-medium flex items-center justify-center text-foreground">
-                        Manage Credits
-                    </Link>
-                </div>
+                )}
             </div>
         </aside>
     );

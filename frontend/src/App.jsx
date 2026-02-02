@@ -15,6 +15,8 @@ import Chatbot from './components/ai/Chatbot';
 import Pricing from './pages/Pricing';
 import PaymentStatus from './pages/PaymentStatus';
 import Docs from './pages/Docs';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import Settings from './pages/Settings';
 import About from './pages/About';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -85,6 +87,8 @@ function App() {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/payment/success" element={<PaymentStatus />} />
                 <Route path="/docs" element={<Docs />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/about" element={<About />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import LightRays from '../backgrounds/LightRays';
 import { useTheme } from '../../context/ThemeContext';
+import Footer from '../shared/Footer';
 
 const Layout = ({ children }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -32,8 +33,11 @@ const Layout = ({ children }) => {
                 <Navbar />
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10 custom-scrollbar">
-                    <div className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {children}
+                    <div className="flex flex-col min-h-full">
+                        <div className="flex-1 max-w-[1600px] w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            {children}
+                        </div>
+                        <Footer />
                     </div>
                 </div>
             </main>

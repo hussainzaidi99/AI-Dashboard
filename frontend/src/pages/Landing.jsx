@@ -6,6 +6,7 @@ import LightRays from '../components/backgrounds/LightRays';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../components/shared/ThemeToggle';
+import Footer from '../components/shared/Footer';
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -43,9 +44,6 @@ const Landing = () => {
                 </div>
 
                 <nav className="hidden md:flex items-center gap-10">
-                    <button className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Features</button>
-                    <button className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Pricing</button>
-                    <button className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Integration</button>
                 </nav>
 
                 <div className="flex items-center gap-6">
@@ -194,20 +192,7 @@ const Landing = () => {
             </main>
 
             {/* Footer */}
-            <footer className="relative z-10 py-16 border-t border-border bg-background transition-colors duration-500">
-                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
-                    <div className="flex items-center gap-3 opacity-40">
-                        <BarChart3 size={20} className="text-foreground" />
-                        <span className="font-heading font-bold text-base tracking-tight text-foreground">AI Analytics</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium">© 2026 Intelligence Engine Ltd. All rights reserved.</p>
-                    <div className="flex gap-10 text-sm font-semibold text-muted-foreground">
-                        <button className="hover:text-foreground transition-colors">Privacy</button>
-                        <button className="hover:text-foreground transition-colors">Terms</button>
-                        <Link to="/docs" className="hover:text-foreground transition-colors">Docs</Link>
-                    </div>
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 };
