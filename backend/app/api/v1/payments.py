@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Any, Optional
 import stripe
 import os
+import logging
 from datetime import datetime, timezone, timedelta
 from app.api import deps
 from app.models.mongodb_models import User, CreditBatch, CreditBatchType
 from app.core.billing import BillingService
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -94,7 +97,7 @@ async def confirm_payment(
         if session_id in current_user.processed_payments:
             # If the user reloads very quickly, the first request might still be saving.
             # We refresh the user state from DB to get the most accurate balance.
-            await current_user.fetch_link("batches")
+            current_user = await User.find_one(User.user_id == current_user.user_id)
             token_amount = int(session.metadata.get("token_amount", 0))
             return {
                 "success": True,
@@ -122,11 +125,19 @@ async def confirm_payment(
             stripe_session_id=session_id
         )
         
+        logger.info(f"Adding {token_amount} tokens to user {current_user.email} from session {session_id}")
+        
+        # Revert to simpler append + save for better compatibility with Beanie's Pydantic integration
         current_user.batches.append(new_batch)
         current_user.processed_payments.append(session_id)
         
-        # Save triggers recalculation
+        # Save triggers recalculation in the User model @before_event hook
         await current_user.save()
+        
+        # Refetch from DB to ensure we have the absolute latest state (including any auto-recalcs)
+        current_user = await User.find_one(User.user_id == current_user.user_id)
+        
+        logger.info(f"Payment confirmed. New balance for {current_user.email}: {current_user.active_balance}")
 
         return {
             "success": True,
@@ -136,6 +147,10 @@ async def confirm_payment(
         }
 
     except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Confirmation failed for session {session_id}: {str(e)}\n{error_trace}")
         raise HTTPException(status_code=500, detail=f"Confirmation failed: {str(e)}")

@@ -57,19 +57,26 @@ class User(Document):
         now = datetime.now(timezone.utc)
         
         total = 0
+        now_ts = now.timestamp()
+        
+        logger.info(f"--- Recalculating balance for {self.email} ---")
         for b in self.batches:
-            # Ensure batch expiry is also treated as UTC if naive
             expiry = b.expires_at
             if expiry.tzinfo is None:
                 expiry = expiry.replace(tzinfo=timezone.utc)
-                
-            if b.remaining_tokens > 0 and expiry > now:
+            
+            expiry_ts = expiry.timestamp()
+            
+            if b.remaining_tokens > 0 and expiry_ts > now_ts:
                 total += b.remaining_tokens
+                logger.debug(f"Adding batch {b.batch_id}: tokens={b.remaining_tokens}, type={b.type}, expires={expiry}")
             else:
-                logger.debug(f"Skipping batch {b.batch_id}: tokens={b.remaining_tokens}, expired={expiry <= now}")
+                reason = "expired" if expiry_ts <= now_ts else "empty"
+                logger.info(f"Skipping batch {b.batch_id} ({b.type}): tokens={b.remaining_tokens}, {reason} (expires={expiry})")
                 
         self.active_balance = total
-        logger.info(f"Recalculated balance for {self.email}: {self.active_balance}")
+        logger.info(f"Final recalculated balance: {self.active_balance}")
+        logger.info(f"--- End Recalculation ---")
 
     class Settings:
         name = "users"
