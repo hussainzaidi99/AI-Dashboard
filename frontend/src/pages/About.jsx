@@ -44,8 +44,8 @@ const About = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { icon: ShieldCheck, title: "Precision", text: "Verified analytical accuracy" },
-                    { icon: Code2, title: "Core", text: "React + Python Ecosystem" },
-                    { icon: Globe, title: "Scalable", text: "Cloud-native infrastructure" }
+                    { icon: Code2, title: "Core", text: "Best Engineering practices for seamless user experience." },
+                    { icon: Globe, title: "Scalable", text: "Designed for scalability and performance." }
                 ].map((item, idx) => (
                     <motion.div
                         key={idx}
