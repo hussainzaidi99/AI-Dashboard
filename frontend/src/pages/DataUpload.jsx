@@ -1,5 +1,6 @@
 import React from 'react';
 import { Database, FileText, History, Info, Trash2 } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
 import FileUploader from '../components/data/FileUploader';
 import { useDataset } from '../context/DatasetContext';
 import { useQuery } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import { fileApi } from '../api/file';
 import { format } from 'date-fns';
 
 const DataUpload = () => {
+    const { toast } = useNotifications();
     const { activeFileId, setActiveFileId, setActiveFileName } = useDataset();
 
     // Fetch recent uploads
@@ -39,9 +41,14 @@ const DataUpload = () => {
                     setActiveFileName(null);
                 }
                 refetch();
+                toast.success('Dataset Deleted', {
+                    description: 'The dataset and its associated analysis have been removed.'
+                });
             } catch (err) {
                 console.error('Error deleting file:', err);
-                alert('Failed to delete file');
+                toast.error('Deletion Failed', {
+                    description: err.friendlyMessage || 'Could not delete the dataset'
+                });
             }
         }
     };

@@ -13,14 +13,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../shared/ThemeToggle';
+import { formatDistanceToNow } from 'date-fns';
 
 const Navbar = () => {
     const { user, logout, activeBalance } = useAuth();
     const { theme } = useTheme();
+    const { notifications, unreadCount, markAllAsRead, setNotifications } = useNotifications();
     const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
     const initials = user?.email?.substring(0, 2).toUpperCase() || 'AI';
 
@@ -67,10 +71,82 @@ const Navbar = () => {
                         <Calendar size={16} />
                         <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
 
-                        <button className="p-3 rounded-2xl bg-foreground/5 border border-border text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-all relative">
-                            <Bell size={20} />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-background" />
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setIsNotificationsOpen(!isNotificationsOpen);
+                                    if (!isNotificationsOpen) markAllAsRead();
+                                }}
+                                className="p-3 rounded-2xl bg-foreground/5 border border-border text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-all relative"
+                            >
+                                <Bell size={20} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-background animate-pulse" />
+                                )}
+                            </button>
+
+                            <AnimatePresence>
+                                {isNotificationsOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-[60]"
+                                            onClick={() => setIsNotificationsOpen(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute right-0 mt-3 w-80 glass-card rounded-2xl border border-border p-4 shadow-2xl z-[70] overflow-hidden"
+                                        >
+                                            <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">Notifications</h3>
+                                                <span className="text-[10px] font-bold bg-foreground/5 px-2 py-0.5 rounded-full text-muted-foreground">Recent History</span>
+                                            </div>
+
+                                            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                                {notifications.length === 0 ? (
+                                                    <div className="py-8 text-center space-y-3">
+                                                        <div className="w-12 h-12 bg-foreground/5 rounded-full flex items-center justify-center mx-auto text-muted-foreground/30">
+                                                            <Bell size={20} />
+                                                        </div>
+                                                        <p className="text-xs font-medium text-muted-foreground">No recent notifications</p>
+                                                    </div>
+                                                ) : (
+                                                    notifications.map((notif) => (
+                                                        <div key={notif.id} className={`p-3 rounded-xl border border-border transition-all hover:bg-foreground/[0.02] flex gap-3 items-start ${notif.type === 'error' ? 'border-rose-500/10' : ''}`}>
+                                                            <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${notif.type === 'success' ? 'bg-emerald-500' :
+                                                                notif.type === 'error' ? 'bg-rose-500' :
+                                                                    notif.type === 'info' ? 'bg-primary' : 'bg-amber-500'
+                                                                }`} />
+                                                            <div className="space-y-1">
+                                                                <p className="text-xs font-bold leading-tight text-foreground">{notif.title}</p>
+                                                                {notif.description && (
+                                                                    <p className="text-[10px] text-muted-foreground leading-relaxed">{notif.description}</p>
+                                                                )}
+                                                                <p className="text-[9px] text-muted-foreground/60 font-mono italic">
+                                                                    {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+
+                                            {notifications.length > 0 && (
+                                                <div className="mt-4 pt-4 border-t border-border flex justify-center">
+                                                    <button
+                                                        onClick={() => setNotifications([])}
+                                                        className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
+                                                    >
+                                                        Clear History
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                     <div className="h-8 w-px bg-border" />

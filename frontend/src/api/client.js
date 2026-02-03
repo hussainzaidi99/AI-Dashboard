@@ -20,4 +20,23 @@ apiClient.interceptors.request.use(
     }
 );
 
+// Response interceptor for API calls
+apiClient.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        // Extract the error message from the response
+        const message = error.response?.data?.detail
+            || error.response?.data?.message
+            || error.message
+            || 'An unexpected error occurred';
+
+        // Attach the message to the error object for easy access in components
+        error.friendlyMessage = message;
+
+        return Promise.reject(error);
+    }
+);
+
 export default apiClient;

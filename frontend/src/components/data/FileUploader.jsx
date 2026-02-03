@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { Upload, File, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../../context/NotificationContext';
 
 const FileUploader = ({ onUploadSuccess }) => {
+    const { toast } = useNotifications();
     const navigate = useNavigate();
     const [isDragging, setIsDragging] = useState(false);
     const [uploadState, setUploadState] = useState('idle'); // idle, uploading, processing, success, error
@@ -59,6 +61,10 @@ const FileUploader = ({ onUploadSuccess }) => {
         setError(null);
         setProgress(0);
 
+        toast.info(`Uploading ${file.name}...`, {
+            description: 'Your data is being saved to our secure server.'
+        });
+
         try {
             // Import API here to avoid circular dependencies if any
             const { fileApi } = await import('../../api/file');
@@ -80,10 +86,20 @@ const FileUploader = ({ onUploadSuccess }) => {
             setUploadState('success');
             if (onUploadSuccess) onUploadSuccess(uploadResult.file_id);
 
+            toast.success('File Processed Successfully', {
+                description: isTextOnly
+                    ? `Extracted text from ${file.name}`
+                    : `Analyzed ${file.name} for insights`
+            });
+
         } catch (err) {
             console.error('Upload error:', err);
-            setError(err.response?.data?.detail || 'Failed to upload file. Please try again.');
+            const msg = err.friendlyMessage || err.response?.data?.detail || 'Failed to upload file. Please try again.';
+            setError(msg);
             setUploadState('error');
+            toast.error('Upload Failed', {
+                description: msg
+            });
         }
     };
 

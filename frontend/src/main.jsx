@@ -17,14 +17,13 @@ const queryClient = new QueryClient({
 import { DatasetProvider } from './context/DatasetContext';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 
 import { BrowserRouter } from 'react-router-dom';
 
-// Get Google Client ID with fallback and logging
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-// Only log warning if Client ID is missing (helps debug production issues)
 if (!googleClientId) {
   console.warn('⚠️ VITE_GOOGLE_CLIENT_ID is not configured. Google OAuth will be disabled.');
 }
@@ -35,6 +34,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <GoogleOAuthProvider clientId={googleClientId}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
+            <NotificationProvider>
+              <AuthProvider>
+                <ThemeProvider>
+                  <DatasetProvider>
+                    <App />
+                  </DatasetProvider>
+                </ThemeProvider>
+              </AuthProvider>
+            </NotificationProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </GoogleOAuthProvider>
+    ) : (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <NotificationProvider>
             <AuthProvider>
               <ThemeProvider>
                 <DatasetProvider>
@@ -42,19 +57,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 </DatasetProvider>
               </ThemeProvider>
             </AuthProvider>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </GoogleOAuthProvider>
-    ) : (
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <ThemeProvider>
-              <DatasetProvider>
-                <App />
-              </DatasetProvider>
-            </ThemeProvider>
-          </AuthProvider>
+          </NotificationProvider>
         </BrowserRouter>
       </QueryClientProvider>
     )}

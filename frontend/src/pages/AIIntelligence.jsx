@@ -15,6 +15,8 @@ import ReactMarkdown from 'react-markdown';
 import { useQuery } from '@tanstack/react-query';
 import { useDataset } from '../context/DatasetContext';
 import { aiApi } from '../api/ai';
+import { useNotifications } from '../context/NotificationContext';
+import { useEffect } from 'react';
 
 const InsightCard = ({ title, description, icon: Icon, type }) => {
     const typeStyles = {
@@ -52,6 +54,7 @@ const SkeletonCard = () => (
 );
 
 const AIIntelligence = () => {
+    const { toast } = useNotifications();
     const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly } = useDataset();
 
     const { data, isLoading, isError } = useQuery({
@@ -63,6 +66,22 @@ const AIIntelligence = () => {
         cacheTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
         retry: 1, // Only retry once on failure
     });
+
+    useEffect(() => {
+        if (data && !isLoading) {
+            toast.success('Analysis Report Updated', {
+                description: 'AI has generated new insights based on your current dataset state.'
+            });
+        }
+    }, [data, isLoading]);
+
+    useEffect(() => {
+        if (isError) {
+            toast.error('Analysis Failed', {
+                description: 'The AI engine encountered an issue while synthesizing your data.'
+            });
+        }
+    }, [isError]);
 
     const mapSeverityToType = (severity) => {
         switch (severity?.toLowerCase()) {

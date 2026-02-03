@@ -23,9 +23,11 @@ import { useNavigate } from 'react-router-dom';
 import { useDataset } from '../context/DatasetContext';
 import { chartsApi } from '../api/charts';
 import { aiApi } from '../api/ai';
+import { useNotifications } from '../context/NotificationContext';
 import VizWidget from '../components/visualizations/VizWidget';
 
 const VisualAnalysis = () => {
+    const { toast } = useNotifications();
     const { activeFileId, activeSheetIndex, hasActiveDataset, isTextOnly } = useDataset();
     const navigate = useNavigate();
     const [selectedChartType, setSelectedChartType] = useState('bar');
@@ -69,6 +71,13 @@ const VisualAnalysis = () => {
                     description: "Generated via Natural Language Processing",
                     chart: result.chart_config
                 });
+                toast.success('Visualization Generated', {
+                    description: `I've created a ${result.chart_config.type || 'chart'} based on your query.`
+                });
+            } else {
+                toast.info('No Visual Results', {
+                    description: 'The AI understood your query but could not find a chart to represent it.'
+                });
             }
         } catch (err) {
             console.error("Query failed:", err);
@@ -92,6 +101,9 @@ const VisualAnalysis = () => {
                     title: `${suggestionQuery}`,
                     description: "Generated from Smart Query Suggestion",
                     chart: result.chart_config
+                });
+                toast.success('Visualizing Suggestion', {
+                    description: 'Generating the recommended analysis for you.'
                 });
             }
         } catch (err) {

@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import About from './pages/About';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
+import { Toaster } from './components/ui/Sonner';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -35,70 +36,73 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={<Landing />}
-      />
+    <>
+      <Toaster position="top-right" richColors closeButton />
+      <Routes>
+        <Route
+          path="/"
+          element={<Landing />}
+        />
 
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : (
-            authView === 'login'
-              ? <Login onToggle={() => setAuthView('register')} />
-              : <Navigate to="/register" replace />
-          )
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : (
-            authView === 'register'
-              ? <Register onToggle={() => setAuthView('login')} />
-              : <Navigate to="/login" replace />
-          )
-        }
-      />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : (
+              authView === 'login'
+                ? <Login onToggle={() => setAuthView('register')} />
+                : <Navigate to="/register" replace />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : (
+              authView === 'register'
+                ? <Register onToggle={() => setAuthView('login')} />
+                : <Navigate to="/login" replace />
+            )
+          }
+        />
 
-      {/* Email Verification - Public Route */}
-      <Route
-        path="/verify-email"
-        element={<EmailVerification />}
-      />
+        {/* Email Verification - Public Route */}
+        <Route
+          path="/verify-email"
+          element={<EmailVerification />}
+        />
 
-      <Route
-        path="/forgot-password"
-        element={<ForgotPassword />}
-      />
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
 
-      <Route path="/docs" element={<Docs />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/terms" element={<Terms />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
 
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Routes>
-                <Route path="/dashboard" element={<Overview />} />
-                <Route path="/upload" element={<DataUpload />} />
-                <Route path="/intelligence" element={<AIIntelligence />} />
-                <Route path="/data" element={<RawData />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/payment/success" element={<PaymentStatus />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/about" element={<About />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-              <Chatbot />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/dashboard" element={<Overview />} />
+                  <Route path="/upload" element={<DataUpload />} />
+                  <Route path="/intelligence" element={<AIIntelligence />} />
+                  <Route path="/data" element={<RawData />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/payment/success" element={<PaymentStatus />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+                <Chatbot />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
