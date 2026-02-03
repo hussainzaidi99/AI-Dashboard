@@ -68,11 +68,14 @@ function App() {
         element={<EmailVerification />}
       />
 
-      {/* Forgot Password - Public Route */}
       <Route
         path="/forgot-password"
         element={<ForgotPassword />}
       />
+
+      <Route path="/docs" element={<Docs />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
 
       <Route
         path="/*"
@@ -86,9 +89,6 @@ function App() {
                 <Route path="/data" element={<RawData />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/payment/success" element={<PaymentStatus />} />
-                <Route path="/docs" element={<Docs />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/terms" element={<Terms />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/about" element={<About />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
