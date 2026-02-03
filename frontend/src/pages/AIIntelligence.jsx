@@ -291,7 +291,7 @@ const AIIntelligence = () => {
                                     <div className="p-6 rounded-[2rem] bg-foreground/5 border border-border flex flex-col items-center text-center space-y-4">
                                         <Brain size={32} className="text-primary" />
                                         <p className="text-sm font-bold text-foreground">Need deeper analysis?</p>
-                                        <p className="text-xs text-muted-foreground">Ask the Intelligence Assistant specific questions about the document content.</p>
+                                        <p className="text-xs text-muted-foreground">Ask the Intelligence Assistant specific questions about the document content. Go to the chat Widget!!</p>
                                         <button
                                             onClick={() => document.getElementById('chatbot-toggle')?.click()}
                                             className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all font-black shadow-lg shadow-primary/10"

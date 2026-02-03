@@ -74,11 +74,11 @@ const About = () => {
 
                 <h2 className="text-2xl font-black text-foreground mb-6 flex items-center gap-3">
                     <Heart size={24} className="text-red-500 fill-red-500" />
-                    Built for the Future
+                    Built for the Future ML Engineers and researchers for data manipulation and analysis.
                 </h2>
                 <div className="space-y-4 text-muted-foreground font-medium">
                     <p>
-                        Developed by SabasoftGames, our mission is to simplify the bridge between raw datasets and actionable business intelligence. We leverage state-of-the-art LLMs and visualization libraries to provide a premium monitoring experience.
+                        Developed by Sabasoft Games, our mission is to simplify the bridge between raw datasets and actionable business intelligence. We leverage state-of-the-art LLMs and visualization libraries to provide a premium monitoring experience.
                     </p>
                     <p>
                         This dashboard is part of our commitment to open-source excellence and high-dimensional analytics tooling.
